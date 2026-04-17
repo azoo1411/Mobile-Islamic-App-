@@ -1,0 +1,14 @@
+[
+  {"number": 1, "name_arabic": "الفاتحة", "name_transliteration": "Al-Fatihah", "ayah_count": 7, "revelation_type": "meccan", "chronological_order": 5},
+  {"number": 2, "name_arabic": "البقرة", "name_transliteration": "Al-Baqarah", "ayah_count": 286, "revelation_type": "medinan", "chronological_order": 87},
+  {"number": 3, "name_arabic": "آل عمران", "name_transliteration": "Aal-Imran", "ayah_count": 200, "revelation_type": "medinan", "chronological_order": 89},
+  {"number": 4, "name_arabic": "النساء", "name_transliteration": "An-Nisa", "ayah_count": 176, "revelation_type": "medinan", "chronological_order": 92},
+  {"number": 5, "name_arabic": "المائدة", "name_transliteration": "Al-Ma'idah", "ayah_count": 120, "revelation_type": "medinan", "chronological_order": 112},
+  {"number": 36, "name_arabic": "يس", "name_transliteration": "Ya-Sin", "ayah_count": 83, "revelation_type": "meccan", "chronological_order": 41},
+  {"number": 55, "name_arabic": "الرحمن", "name_transliteration": "Ar-Rahman", "ayah_count": 78, "revelation_type": "medinan", "chronological_order": 97},
+  {"number": 56, "name_arabic": "الواقعة", "name_transliteration": "Al-Waqi'ah", "ayah_count": 96, "revelation_type": "meccan", "chronological_order": 46},
+  {"number": 67, "name_arabic": "الملك", "name_transliteration": "Al-Mulk", "ayah_count": 30, "revelation_type": "meccan", "chronological_order": 77},
+  {"number": 112, "name_arabic": "الإخلاص", "name_transliteration": "Al-Ikhlas", "ayah_count": 4, "revelation_type": "meccan", "chronological_order": 22},
+  {"number": 113, "name_arabic": "الفلق", "name_transliteration": "Al-Falaq", "ayah_count": 5, "revelation_type": "meccan", "chronological_order": 20},
+  {"number": 114, "name_arabic": "الناس", "name_transliteration": "An-Nas", "ayah_count": 6, "revelation_type": "meccan", "chronological_order": 21}
+]
