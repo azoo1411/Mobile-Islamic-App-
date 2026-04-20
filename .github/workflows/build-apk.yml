@@ -43,10 +43,11 @@ jobs:
       - name: توليد ملفات Drift
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: بناء APK
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: بناء APK (مع تفاصيل الخطأ)
+        run: flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tail -100
 
       - name: رفع ملف APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: islamic-app-release
