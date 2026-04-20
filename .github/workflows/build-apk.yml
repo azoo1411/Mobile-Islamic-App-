@@ -59,10 +59,17 @@ jobs:
           find . -name "*.log" -path "*/build/*" 2>/dev/null | head -5 | xargs cat 2>/dev/null || true
           cat android/app/build/outputs/logs/manifest-merger-release-report.txt 2>/dev/null || true
 
+      - name: البحث عن ملف APK
+        if: success()
+        run: find build -name "*.apk" 2>/dev/null
+
       - name: رفع ملف APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: islamic-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/apk/release/*.apk
+          if-no-files-found: warn
           retention-days: 30
