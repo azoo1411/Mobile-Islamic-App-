@@ -13,20 +13,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Fix for AGP 8.x: packages without namespace (e.g. flutter_qiblah)
-// Use beforeProject to register afterEvaluate BEFORE the subproject is configured
-gradle.beforeProject { proj ->
-    proj.afterEvaluate {
-        if (proj.hasProperty("android")) {
-            try {
-                if (proj.android.namespace == null) {
-                    proj.android.namespace = proj.group?.toString() ?: "com.example.${proj.name}"
-                }
-            } catch (ignored) {}
-        }
-    }
-}
-
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

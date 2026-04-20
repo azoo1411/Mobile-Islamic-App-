@@ -39,7 +39,6 @@ dependencies:
 
   # Location & Qibla
   geolocator: ^10.1.0
-  flutter_qiblah: ^2.2.1
   sensors_plus: ^5.0.1
 
   # Notifications
