@@ -13,6 +13,17 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Fix for AGP 8.x: packages without namespace (e.g. flutter_qiblah)
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            if (!project.android.hasProperty("namespace") || project.android.namespace == null) {
+                project.android.namespace = project.group ?: "com.example.${project.name}"
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
