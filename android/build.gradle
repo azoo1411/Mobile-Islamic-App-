@@ -14,12 +14,15 @@ subprojects {
 }
 
 // Fix for AGP 8.x: packages without namespace (e.g. flutter_qiblah)
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            if (!project.android.hasProperty("namespace") || project.android.namespace == null) {
-                project.android.namespace = project.group ?: "com.example.${project.name}"
-            }
+// Use beforeProject to register afterEvaluate BEFORE the subproject is configured
+gradle.beforeProject { proj ->
+    proj.afterEvaluate {
+        if (proj.hasProperty("android")) {
+            try {
+                if (proj.android.namespace == null) {
+                    proj.android.namespace = proj.group?.toString() ?: "com.example.${proj.name}"
+                }
+            } catch (ignored) {}
         }
     }
 }
