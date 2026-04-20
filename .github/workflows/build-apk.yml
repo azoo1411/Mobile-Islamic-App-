@@ -29,15 +29,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: قبول Android SDK licenses وتثبيت NDK
-        run: |
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "build-tools;35.0.0" "platforms;android-35"
-
       - name: إنشاء local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+
+      - name: قبول Android licenses
+        run: yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: تثبيت التبعيات
         run: flutter pub get
@@ -46,7 +44,7 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: بناء APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: رفع ملف APK
         uses: actions/upload-artifact@v4
