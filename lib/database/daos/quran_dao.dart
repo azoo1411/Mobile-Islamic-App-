@@ -14,8 +14,9 @@ class QuranDao extends DatabaseAccessor<AppDatabase> with _$QuranDaoMixin {
           .getSingleOrNull();
 
   Future<List<Ayah>> getAyahsForSurah(int surahNumber) =>
-      (select(ayahs)..where((a) => a.surahNumber.equals(surahNumber))
-        ..orderBy([(a) => OrderingTerm.asc(a.ayahNumber)]))
+      (select(ayahs)
+            ..where((a) => a.surahNumber.equals(surahNumber))
+            ..orderBy([(a) => OrderingTerm.asc(a.ayahNumber)]))
           .get();
 
   Future<Ayah?> getAyah(int surahNumber, int ayahNumber) =>
@@ -26,11 +27,12 @@ class QuranDao extends DatabaseAccessor<AppDatabase> with _$QuranDaoMixin {
           .getSingleOrNull();
 
   Future<List<Ayah>> getAyahsByJuz(int juzNumber) =>
-      (select(ayahs)..where((a) => a.juzNumber.equals(juzNumber))
-        ..orderBy([
-          (a) => OrderingTerm.asc(a.surahNumber),
-          (a) => OrderingTerm.asc(a.ayahNumber),
-        ]))
+      (select(ayahs)
+            ..where((a) => a.juzNumber.equals(juzNumber))
+            ..orderBy([
+              (a) => OrderingTerm.asc(a.surahNumber),
+              (a) => OrderingTerm.asc(a.ayahNumber),
+            ]))
           .get();
 
   Future<List<Ayah>> searchAyahs(String query) =>
@@ -51,9 +53,9 @@ class QuranDao extends DatabaseAccessor<AppDatabase> with _$QuranDaoMixin {
   Future<int> insertSurah(SurahsCompanion surah) =>
       into(surahs).insertOnConflictUpdate(surah);
 
-  Future<int> insertAyah(AyahsCompanion ayah) =>
-      into(ayahs).insertOnConflictUpdate(ayah);
-
-  Future<void> insertAllAyahs(List<AyahsCompanion> batch) =>
-      batch_(ayahs, batch, mode: InsertMode.insertOrReplace);
+  Future<void> insertAllAyahs(List<AyahsCompanion> batch) async {
+    await db.batch((b) {
+      b.insertAllOnConflictUpdate(ayahs, batch);
+    });
+  }
 }

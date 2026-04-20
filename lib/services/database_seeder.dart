@@ -97,7 +97,7 @@ class DatabaseSeeder {
           title: Value(p['title'] as String),
           poet: Value(p['poet'] as String),
           era: Value(p['era'] as String?),
-          text: Value(p['text'] as String),
+          poemText: Value(p['text'] as String),
         ));
       }
     } catch (_) {

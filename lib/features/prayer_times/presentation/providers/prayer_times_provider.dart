@@ -22,9 +22,7 @@ class PrayerTimesData {
   });
 }
 
-final prayerTimesProvider =
-    FutureProvider<PrayerTimesData>((ref) async {
-  // Check location permission
+final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
   LocationPermission permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
@@ -38,12 +36,9 @@ final prayerTimesProvider =
   );
 
   final prefs = await SharedPreferences.getInstance();
-  final methodIndex =
-      prefs.getInt(AppConstants.prefCalcMethod) ?? 0;
+  final methodIndex = prefs.getInt(AppConstants.prefCalcMethod) ?? 0;
 
-  final coordinates =
-      Coordinates(position.latitude, position.longitude);
-
+  final coordinates = Coordinates(position.latitude, position.longitude);
   final params = _getCalculationParams(methodIndex);
   final today = DateComponents.from(DateTime.now());
   final prayerTimes = PrayerTimes(coordinates, today, params);
@@ -62,13 +57,13 @@ final prayerTimesProvider =
   final nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
   final now = DateTime.now();
   final timeUntil = nextPrayerTime?.difference(now) ?? Duration.zero;
-
   final nextName = _prayerEnumToKey(nextPrayer);
 
   return PrayerTimesData(
-    locationName: '${position.latitude.toStringAsFixed(2)}° , ${position.longitude.toStringAsFixed(2)}°',
+    locationName:
+        '${position.latitude.toStringAsFixed(2)}° , ${position.longitude.toStringAsFixed(2)}°',
     nextPrayerName: nextName,
-    timeUntilNext: timeUntil,
+    timeUntilNext: timeUntil.isNegative ? Duration.zero : timeUntil,
     todayPrayers: prayers,
     prayerTimes: prayerTimes,
   );
@@ -77,19 +72,19 @@ final prayerTimesProvider =
 CalculationParameters _getCalculationParams(int methodIndex) {
   switch (methodIndex) {
     case 0:
-      return CalculationMethod.muslimWorldLeague.getParameters();
+      return CalculationMethod.muslim_world_league.getParameters();
     case 1:
-      return CalculationMethod.northAmerica.getParameters();
+      return CalculationMethod.north_america.getParameters();
     case 2:
-      return CalculationMethod.europe.getParameters();
+      return CalculationMethod.moon_sighting_committee.getParameters();
     case 3:
       return CalculationMethod.karachi.getParameters();
     case 4:
       return CalculationMethod.egyptian.getParameters();
     case 5:
-      return CalculationMethod.ummAlQura.getParameters();
+      return CalculationMethod.umm_al_qura.getParameters();
     default:
-      return CalculationMethod.muslimWorldLeague.getParameters();
+      return CalculationMethod.muslim_world_league.getParameters();
   }
 }
 

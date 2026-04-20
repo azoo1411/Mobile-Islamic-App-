@@ -3,7 +3,7 @@ import '../app_database.dart';
 
 part 'bookmarks_dao.g.dart';
 
-@DriftAccessor(tables: [Bookmarks, ReadingProgress])
+@DriftAccessor(tables: [Bookmarks, LastRead])
 class BookmarksDao extends DatabaseAccessor<AppDatabase>
     with _$BookmarksDaoMixin {
   BookmarksDao(super.db);
@@ -16,7 +16,8 @@ class BookmarksDao extends DatabaseAccessor<AppDatabase>
   Future<bool> isBookmarked(String type, String referenceId) async {
     final result = await (select(bookmarks)
           ..where((b) =>
-              b.type.equals(type) & b.referenceId.equals(referenceId)))
+              b.bookmarkType.equals(type) &
+              b.referenceId.equals(referenceId)))
         .getSingleOrNull();
     return result != null;
   }
@@ -27,20 +28,21 @@ class BookmarksDao extends DatabaseAccessor<AppDatabase>
   Future<void> removeBookmark(String type, String referenceId) =>
       (delete(bookmarks)
             ..where((b) =>
-                b.type.equals(type) & b.referenceId.equals(referenceId)))
+                b.bookmarkType.equals(type) &
+                b.referenceId.equals(referenceId)))
           .go();
 
   Future<void> saveProgress(String type, String referenceId) =>
-      into(readingProgress).insertOnConflictUpdate(
-        ReadingProgressCompanion(
-          type: Value(type),
+      into(lastRead).insertOnConflictUpdate(
+        LastReadCompanion(
+          contentType: Value(type),
           referenceId: Value(referenceId),
         ),
       );
 
-  Future<ReadingProgres?> getLastProgress(String type) =>
-      (select(readingProgress)
-            ..where((r) => r.type.equals(type))
+  Future<LastReadData?> getLastProgress(String type) =>
+      (select(lastRead)
+            ..where((r) => r.contentType.equals(type))
             ..orderBy([(r) => OrderingTerm.desc(r.lastRead)])
             ..limit(1))
           .getSingleOrNull();

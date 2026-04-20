@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 
 import 'daos/quran_dao.dart';
 import 'daos/hadith_dao.dart';
@@ -18,7 +16,7 @@ class Surahs extends Table {
   TextColumn get nameArabic => text()();
   TextColumn get nameTransliteration => text()();
   IntColumn get ayahCount => integer()();
-  TextColumn get revelationType => text()(); // 'meccan' | 'medinan'
+  TextColumn get revelationType => text()();
   IntColumn get chronologicalOrder => integer()();
 
   @override
@@ -27,26 +25,20 @@ class Surahs extends Table {
 
 class Ayahs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get surahNumber => integer().references(Surahs, #number)();
+  IntColumn get surahNumber => integer()();
   IntColumn get ayahNumber => integer()();
   TextColumn get textArabic => text()();
-  TextColumn get textUthmani => text()(); // with full diacritics
+  TextColumn get textUthmani => text()();
   IntColumn get pageNumber => integer()();
   IntColumn get juzNumber => integer()();
   IntColumn get hizbNumber => integer()();
-
-  @override
-  List<Index> get indexes => [
-        Index('idx_ayah_surah', ['surahNumber']),
-        Index('idx_ayah_juz', ['juzNumber']),
-      ];
 }
 
 class Tafseers extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get surahNumber => integer()();
   IntColumn get ayahNumber => integer()();
-  TextColumn get source => text()(); // 'ibn_katheer' | 'saadi'
+  TextColumn get source => text()();
   TextColumn get textArabic => text()();
 }
 
@@ -75,25 +67,25 @@ class Poems extends Table {
   TextColumn get title => text()();
   TextColumn get poet => text()();
   TextColumn get era => text().nullable()();
-  TextColumn get text => text()(); // full poem, lines separated by \n
-  TextColumn get tags => text().nullable()(); // JSON array
+  TextColumn get poemText => text()();
+  TextColumn get tags => text().nullable()();
 }
 
 class Bookmarks extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get type => text()(); // 'ayah' | 'hadith' | 'poem'
-  TextColumn get referenceId => text()(); // e.g. "2:255" or "bukhari:1"
+  TextColumn get bookmarkType => text()();
+  TextColumn get referenceId => text()();
   TextColumn get note => text().nullable()();
   DateTimeColumn get savedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-class ReadingProgress extends Table {
-  TextColumn get type => text()(); // 'quran' | 'hadith'
+class LastRead extends Table {
+  TextColumn get contentType => text()();
   TextColumn get referenceId => text()();
   DateTimeColumn get lastRead => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  Set<Column> get primaryKey => {type, referenceId};
+  Set<Column> get primaryKey => {contentType, referenceId};
 }
 
 // ─── Database ──────────────────────────────────────────────────────────────
@@ -102,7 +94,7 @@ class ReadingProgress extends Table {
   tables: [
     Surahs, Ayahs, Tafseers,
     Hadiths, HadithChapters,
-    Poems, Bookmarks, ReadingProgress,
+    Poems, Bookmarks, LastRead,
   ],
   daos: [QuranDao, HadithDao, PoetryDao, BookmarksDao],
 )

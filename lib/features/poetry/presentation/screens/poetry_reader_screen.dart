@@ -71,7 +71,7 @@ class PoetryReaderScreen extends ConsumerWidget {
                       icon: const Icon(Icons.copy,
                           color: AppColors.textSecondary),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: poem.text));
+                        Clipboard.setData(ClipboardData(text: poem.poemText));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('تم نسخ القصيدة',
@@ -93,7 +93,7 @@ class PoetryReaderScreen extends ConsumerWidget {
               ],
             ),
             const Divider(height: 20),
-            PoetryText(poem.text),
+            PoetryText(poem.poemText),
             if (poem.era != null) ...[
               const SizedBox(height: 12),
               Align(

@@ -16,7 +16,7 @@ class PoetryDao extends DatabaseAccessor<AppDatabase> with _$PoetryDaoMixin {
   Future<List<Poem>> searchPoems(String query) =>
       (select(poems)
             ..where((p) =>
-                p.text.contains(query) |
+                p.poemText.contains(query) |
                 p.title.contains(query) |
                 p.poet.contains(query))
             ..limit(30))
