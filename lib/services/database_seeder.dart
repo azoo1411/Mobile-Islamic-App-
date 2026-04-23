@@ -1,29 +1,32 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
 import '../database/daos/quran_dao.dart';
 import '../database/daos/hadith_dao.dart';
 import '../database/daos/poetry_dao.dart';
-import 'package:drift/drift.dart';
+import 'quran_api_service.dart';
 
-/// Seeds the local SQLite database from bundled JSON assets.
-/// Run once on first launch. Data sources:
-///   - assets/data/surahs.json    (tanzil.net metadata)
-///   - assets/data/quran.json     (tanzil.net full Uthmani text)
-///   - assets/data/hadiths.json   (curated subset from sunnah.com)
-///   - assets/data/poetry.json    (curated Arabic poetry)
+/// Seeds the local SQLite database from bundled JSON assets and remote API.
+/// Run once on first launch (no-op if already seeded).
 class DatabaseSeeder {
   final AppDatabase _db;
+  final QuranApiService _quranApi;
 
-  DatabaseSeeder(this._db);
+  DatabaseSeeder(this._db) : _quranApi = QuranApiService();
 
-  Future<void> seedIfNeeded() async {
-    final count = await _db.quranDao.getAllSurahs();
-    if (count.isNotEmpty) return; // Already seeded
+  Future<void> seedIfNeeded({
+    void Function(String phase, int current, int total)? onProgress,
+  }) async {
+    final existing = await _db.quranDao.getAllSurahs();
+    if (existing.isNotEmpty) return;
 
+    onProgress?.call('surahs', 0, 1);
     await _seedSurahs();
-    await _seedAyahs();
+    onProgress?.call('surahs', 1, 1);
+
+    await _seedAyahsFromApi(onProgress: (c, t) => onProgress?.call('ayahs', c, t));
     await _seedHadiths();
     await _seedPoetry();
   }
@@ -43,29 +46,16 @@ class DatabaseSeeder {
     }
   }
 
-  Future<void> _seedAyahs() async {
-    final raw = await rootBundle.loadString('assets/data/quran.json');
-    final List data = json.decode(raw);
-    final batch = <AyahsCompanion>[];
+  Future<void> _seedAyahsFromApi({
+    void Function(int current, int total)? onProgress,
+  }) async {
+    final ayahs = await _quranApi.fetchCompleteQuran(onProgress: onProgress);
 
-    for (final a in data) {
-      batch.add(AyahsCompanion(
-        surahNumber: Value(a['surah'] as int),
-        ayahNumber: Value(a['ayah'] as int),
-        textArabic: Value(a['text'] as String),
-        textUthmani: Value(a['text_uthmani'] as String),
-        pageNumber: Value(a['page'] as int),
-        juzNumber: Value(a['juz'] as int),
-        hizbNumber: Value((a['hizb'] ?? 1) as int),
-      ));
-
-      // Insert in batches of 500 for performance
-      if (batch.length >= 500) {
-        await _db.quranDao.insertAllAyahs(batch);
-        batch.clear();
-      }
+    // Insert in batches of 500 for performance
+    for (var i = 0; i < ayahs.length; i += 500) {
+      final batch = ayahs.sublist(i, (i + 500).clamp(0, ayahs.length));
+      await _db.quranDao.insertAllAyahs(batch);
     }
-    if (batch.isNotEmpty) await _db.quranDao.insertAllAyahs(batch);
   }
 
   Future<void> _seedHadiths() async {

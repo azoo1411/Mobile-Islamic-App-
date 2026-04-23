@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/splash/splash_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/quran/presentation/screens/quran_home_screen.dart';
 import '../../features/quran/presentation/screens/surah_screen.dart';
@@ -17,8 +18,12 @@ import '../widgets/main_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/splash',
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (c, s) => const SplashScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),
         routes: [
