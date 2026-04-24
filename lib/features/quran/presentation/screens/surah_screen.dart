@@ -110,7 +110,11 @@ class _SurahScreenState extends ConsumerState<SurahScreen>
       itemBuilder: (context, index) {
         if (index == 0) return _buildSurahHeader(data);
         final ayah = data.ayahs[index - 1];
-        return AyahCard(ayah: ayah, fontSize: _fontSize);
+        return AyahCard(
+          ayah: ayah,
+          fontSize: _fontSize,
+          totalAyahsInSurah: data.ayahs.length,
+        );
       },
     );
   }
