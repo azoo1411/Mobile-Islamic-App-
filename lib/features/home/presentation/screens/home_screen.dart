@@ -9,7 +9,6 @@ import '../../../../core/widgets/arabic_text.dart';
 import '../../../prayer_times/presentation/providers/prayer_times_provider.dart';
 import '../widgets/verse_of_day_card.dart';
 import '../widgets/prayer_summary_card.dart';
-import '../widgets/daily_hadith_card.dart';
 import '../widgets/quick_access_grid.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -32,8 +31,6 @@ class HomeScreen extends ConsumerWidget {
                   const VerseOfDayCard(),
                   const SizedBox(height: 16),
                   const PrayerSummaryCard(),
-                  const SizedBox(height: 16),
-                  const DailyHadithCard(),
                   const SizedBox(height: 16),
                   _buildSectionTitle('وصول سريع'),
                   const SizedBox(height: 12),

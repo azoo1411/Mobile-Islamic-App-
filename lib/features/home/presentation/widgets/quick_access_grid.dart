@@ -24,14 +24,9 @@ class QuickAccessGrid extends StatelessWidget {
         color: Color(0xFFD4AF37),
         route: '/qibla'),
     _QuickItem(
-        label: 'الأذكار',
-        icon: Icons.favorite,
-        color: Color(0xFFE07A5F),
-        route: '/hadith'),
-    _QuickItem(
         label: 'القصائد',
-        icon: Icons.library_books,
-        color: Color(0xFF9B5DE5),
+        icon: Icons.auto_stories,
+        color: Color(0xFFE07A5F),
         route: '/poetry'),
     _QuickItem(
         label: 'البحث',
