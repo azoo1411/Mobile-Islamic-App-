@@ -10,6 +10,7 @@ import '../../features/prayer_times/presentation/screens/prayer_times_screen.dar
 import '../../features/qibla/presentation/screens/qibla_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_home_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_reader_screen.dart';
+import '../../features/contact/presentation/screens/contact_screen.dart';
 import '../widgets/main_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -53,6 +54,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/poetry/:categoryId',
         builder: (c, s) =>
             PoetryReaderScreen(categoryId: s.pathParameters['categoryId']!),
+      ),
+      GoRoute(
+        path: '/contact',
+        builder: (c, s) => const ContactScreen(),
       ),
     ],
   );

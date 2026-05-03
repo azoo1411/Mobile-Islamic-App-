@@ -91,9 +91,9 @@ class HomeScreen extends ConsumerWidget {
           tooltip: 'بحث',
         ),
         IconButton(
-          icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          onPressed: () {},
-          tooltip: 'الإعدادات',
+          icon: const Icon(Icons.mail_outline, color: Colors.white),
+          onPressed: () => context.push('/contact'),
+          tooltip: 'تواصل معنا',
         ),
       ],
     );

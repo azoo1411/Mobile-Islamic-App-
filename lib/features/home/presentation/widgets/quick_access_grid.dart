@@ -33,6 +33,11 @@ class QuickAccessGrid extends StatelessWidget {
         icon: Icons.search,
         color: Color(0xFF00B4D8),
         route: '/quran/search'),
+    _QuickItem(
+        label: 'تواصل معنا',
+        icon: Icons.mail_outline,
+        color: Color(0xFF6B48FF),
+        route: '/contact'),
   ];
 
   @override
