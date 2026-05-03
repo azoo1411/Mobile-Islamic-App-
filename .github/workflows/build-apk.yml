@@ -1,16 +1,24 @@
-name: Build Android APK
+name: Build & Release APK
 
 on:
   push:
     branches: [ main, claude/arabic-islamic-app-j58zT ]
-  pull_request:
-    branches: [ main ]
+    tags: [ 'v*' ]
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'إنشاء إصدار جديد (release)?'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
 
 jobs:
   build-apk:
-    name: بناء ملف APK
+    name: بناء APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: تحميل الكود
@@ -33,14 +41,11 @@ jobs:
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" || true
-          echo "NDK path: $ANDROID_SDK_ROOT/ndk/27.0.12077973"
-          ls $ANDROID_SDK_ROOT/ndk/ || true
 
       - name: إنشاء local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
-          cat android/local.properties
 
       - name: تثبيت التبعيات
         run: flutter pub get
@@ -53,23 +58,57 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/27.0.12077973
 
+      - name: إعادة تسمية APK
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/alwijha-alqibliya.apk
+
+      - name: رفع APK كـ artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alwijha-alqibliya-apk
+          path: dist/alwijha-alqibliya.apk
+          retention-days: 30
+
+      - name: تحديد اسم الإصدار
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "name=الوجهة القبلية ${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            SHA=$(echo $GITHUB_SHA | cut -c1-7)
+            echo "tag=build-$SHA" >> $GITHUB_OUTPUT
+            echo "name=الوجهة القبلية — بناء $SHA" >> $GITHUB_OUTPUT
+          fi
+
+      - name: إنشاء GitHub Release ورفع APK
+        if: |
+          startsWith(github.ref, 'refs/tags/') ||
+          github.ref == 'refs/heads/main' ||
+          github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.name }}
+          body: |
+            ## 📲 الوجهة القبلية
+
+            تطبيق إسلامي متكامل يضم:
+            - 📖 القرآن الكريم كاملاً (٦٢٣٦ آية)
+            - 🕌 أوقات الصلاة بحسب موقعك
+            - 🧭 اتجاه القبلة
+            - 📜 القصائد العربية
+
+            **التثبيت:** حمّل الملف `alwijha-alqibliya.apk` وافتحه على جهاز Android
+            > قد تحتاج لتفعيل "السماح بمصادر غير معروفة" في إعدادات الجهاز
+          files: dist/alwijha-alqibliya.apk
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: عرض Gradle log عند الفشل
         if: failure()
         run: |
           find . -name "*.log" -path "*/build/*" 2>/dev/null | head -5 | xargs cat 2>/dev/null || true
-          cat android/app/build/outputs/logs/manifest-merger-release-report.txt 2>/dev/null || true
-
-      - name: البحث عن ملف APK
-        if: success()
-        run: find build -name "*.apk" 2>/dev/null
-
-      - name: رفع ملف APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: islamic-app-release
-          path: |
-            build/app/outputs/flutter-apk/*.apk
-            build/app/outputs/apk/release/*.apk
-          if-no-files-found: warn
-          retention-days: 30
