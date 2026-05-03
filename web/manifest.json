@@ -1,11 +1,11 @@
 {
-    "name": "islamic_app",
-    "short_name": "islamic_app",
+    "name": "الوجهة القبلية",
+    "short_name": "الوجهة القبلية",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1B4332",
+    "theme_color": "#1B4332",
+    "description": "تطبيق إسلامي متكامل — القرآن الكريم، أوقات الصلاة، اتجاه القبلة، القصائد",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

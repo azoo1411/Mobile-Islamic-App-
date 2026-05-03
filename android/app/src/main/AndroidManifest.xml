@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.KEEP_SCREEN_ON" />
 
     <application
-        android:label="تطبيق إسلامي"
+        android:label="الوجهة القبلية"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
