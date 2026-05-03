@@ -5,13 +5,6 @@ on:
     branches: [ main, claude/arabic-islamic-app-j58zT ]
     tags: [ 'v*' ]
   workflow_dispatch:
-    inputs:
-      release:
-        description: 'إنشاء إصدار جديد (release)?'
-        required: false
-        default: 'true'
-        type: choice
-        options: ['true', 'false']
 
 jobs:
   build-apk:
@@ -37,10 +30,9 @@ jobs:
           channel: stable
           cache: true
 
-      - name: قبول licenses وتثبيت NDK
+      - name: قبول licenses
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" || true
 
       - name: إنشاء local.properties
         run: |
@@ -55,8 +47,6 @@ jobs:
 
       - name: بناء APK
         run: flutter build apk --release --no-tree-shake-icons
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/27.0.12077973
 
       - name: إعادة تسمية APK
         run: |
@@ -70,45 +60,40 @@ jobs:
           path: dist/alwijha-alqibliya.apk
           retention-days: 30
 
-      - name: تحديد اسم الإصدار
+      - name: تحديد tag الإصدار
         id: version
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-            echo "name=الوجهة القبلية ${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            SHA=$(echo $GITHUB_SHA | cut -c1-7)
-            echo "tag=build-$SHA" >> $GITHUB_OUTPUT
-            echo "name=الوجهة القبلية — بناء $SHA" >> $GITHUB_OUTPUT
-          fi
+          SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "tag=v1.0-$SHA" >> $GITHUB_OUTPUT
+          echo "name=الوجهة القبلية v1.0" >> $GITHUB_OUTPUT
 
-      - name: إنشاء GitHub Release ورفع APK
-        if: |
-          startsWith(github.ref, 'refs/tags/') ||
-          github.ref == 'refs/heads/main' ||
-          github.event_name == 'workflow_dispatch'
+      - name: إنشاء GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.name }}
           body: |
-            ## 📲 الوجهة القبلية
+            ## 📲 الوجهة القبلية v1.0
 
             تطبيق إسلامي متكامل يضم:
-            - 📖 القرآن الكريم كاملاً (٦٢٣٦ آية)
-            - 🕌 أوقات الصلاة بحسب موقعك
-            - 🧭 اتجاه القبلة
-            - 📜 القصائد العربية
+            - 📖 القرآن الكريم كاملاً (٦٢٣٦ آية بالرسم العثماني)
+            - 🕌 أوقات الصلاة حسب موقعك
+            - 🔔 أذان المدينة (خاشقجي) أو مكة (السقاف) مع إشعارات
+            - 🧭 اتجاه القبلة بالبوصلة
+            - 📜 القصائد العربية الكلاسيكية والحديثة
+            - 📧 تواصل معنا
 
-            **التثبيت:** حمّل الملف `alwijha-alqibliya.apk` وافتحه على جهاز Android
-            > قد تحتاج لتفعيل "السماح بمصادر غير معروفة" في إعدادات الجهاز
+            **طريقة التثبيت:**
+            1. حمّل ملف `alwijha-alqibliya.apk`
+            2. افتحه على جهاز Android
+            3. فعّل "السماح بمصادر غير معروفة" إن طُلب
           files: dist/alwijha-alqibliya.apk
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/') }}
+          prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: عرض Gradle log عند الفشل
+      - name: سجل الأخطاء
         if: failure()
         run: |
-          find . -name "*.log" -path "*/build/*" 2>/dev/null | head -5 | xargs cat 2>/dev/null || true
+          find . -name '*.log' -path '*/build/*' | head -5 | xargs cat 2>/dev/null || true
