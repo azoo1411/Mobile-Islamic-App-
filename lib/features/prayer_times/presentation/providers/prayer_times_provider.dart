@@ -12,6 +12,7 @@ class PrayerTimesData {
   final Duration timeUntilNext;
   final Map<String, String> todayPrayers;
   final PrayerTimes prayerTimes;
+  final Map<String, DateTime> rawTimes;
 
   PrayerTimesData({
     required this.locationName,
@@ -19,6 +20,7 @@ class PrayerTimesData {
     required this.timeUntilNext,
     required this.todayPrayers,
     required this.prayerTimes,
+    required this.rawTimes,
   });
 }
 
@@ -59,6 +61,14 @@ final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
   final timeUntil = nextPrayerTime?.difference(now) ?? Duration.zero;
   final nextName = _prayerEnumToKey(nextPrayer);
 
+  final rawTimes = {
+    'fajr': prayerTimes.fajr,
+    'dhuhr': prayerTimes.dhuhr,
+    'asr': prayerTimes.asr,
+    'maghrib': prayerTimes.maghrib,
+    'isha': prayerTimes.isha,
+  };
+
   return PrayerTimesData(
     locationName:
         '${position.latitude.toStringAsFixed(2)}° , ${position.longitude.toStringAsFixed(2)}°',
@@ -66,6 +76,7 @@ final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
     timeUntilNext: timeUntil.isNegative ? Duration.zero : timeUntil,
     todayPrayers: prayers,
     prayerTimes: prayerTimes,
+    rawTimes: rawTimes,
   );
 });
 

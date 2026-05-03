@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_utils.dart';
+import '../../../../services/notification_service.dart';
 import '../providers/prayer_times_provider.dart';
+import '../providers/adhan_settings_provider.dart';
 
 class PrayerTimesScreen extends ConsumerStatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -23,11 +25,9 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        if (_countdown.inSeconds > 0) {
-          _countdown -= const Duration(seconds: 1);
-        }
-      });
+      if (mounted && _countdown.inSeconds > 0) {
+        setState(() => _countdown -= const Duration(seconds: 1));
+      }
     });
   }
 
@@ -40,164 +40,307 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   @override
   Widget build(BuildContext context) {
     final prayerAsync = ref.watch(prayerTimesProvider);
+    final settingsAsync = ref.watch(adhanSettingsProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: AppColors.backgroundLight,
         appBar: AppBar(
-          title: const Text('أوقات الصلاة'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          title: const Text(
+            'أوقات الصلاة',
+            style: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.explore_outlined),
+              icon: const Icon(Icons.explore_outlined, color: Colors.white),
               onPressed: () => context.push('/qibla'),
               tooltip: 'اتجاه القبلة',
             ),
             IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => _showCalculationMethodSheet(context),
-              tooltip: 'طريقة الحساب',
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: () => _showAdhanSettings(context, settingsAsync.valueOrNull),
+              tooltip: 'إعدادات الأذان',
             ),
           ],
         ),
         body: prayerAsync.when(
           loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.primary)),
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
           error: (e, _) => _buildError(context, e.toString()),
           data: (data) {
             if (_countdown == Duration.zero) {
               _countdown = data.timeUntilNext;
             }
-            return _buildBody(data);
+            return _buildBody(data, settingsAsync.valueOrNull);
           },
         ),
       ),
     );
   }
 
-  Widget _buildBody(PrayerTimesData data) {
+  Widget _buildBody(PrayerTimesData data, AdhanSettings? settings) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildNextPrayerCard(data),
-          const SizedBox(height: 20),
-          _buildPrayersList(data),
-          const SizedBox(height: 16),
-          _buildLocationInfo(data),
+          _buildNextPrayerHero(data),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            child: Column(
+              children: [
+                _buildPrayersList(data, settings),
+                const SizedBox(height: 16),
+                if (settings != null) _buildAdhanBanner(context, settings),
+                const SizedBox(height: 12),
+                _buildLocationInfo(data),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNextPrayerCard(PrayerTimesData data) {
+  Widget _buildNextPrayerHero(PrayerTimesData data) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
           colors: [AppColors.primary, AppColors.primaryLight],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(
-        children: [
-          const Text(
-            'الصلاة القادمة',
-            style: TextStyle(
-              fontFamily: 'NotoNaskhArabic',
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'الصلاة القادمة',
+                  style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                ArabicUtils.prayerName(data.nextPrayerName),
+                style: const TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                ArabicUtils.formatPrayerCountdown(_countdown),
+                style: AppTypography.prayerTime.copyWith(
+                  color: AppColors.gold,
+                  fontSize: 48,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'الوقت المتبقي',
+                style: TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  color: Colors.white60,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            ArabicUtils.prayerName(data.nextPrayerName),
-            style: const TextStyle(
-              fontFamily: 'NotoNaskhArabic',
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            ArabicUtils.formatPrayerCountdown(_countdown),
-            style: AppTypography.prayerTime.copyWith(
-              color: AppColors.gold,
-              fontSize: 42,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'الوقت المتبقي',
-            style: TextStyle(
-              fontFamily: 'NotoNaskhArabic',
-              color: Colors.white60,
-              fontSize: 13,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildPrayersList(PrayerTimesData data) {
-    final prayerColors = {
-      'fajr': AppColors.fajr,
-      'dhuhr': AppColors.dhuhr,
-      'asr': AppColors.asr,
-      'maghrib': AppColors.maghrib,
-      'isha': AppColors.isha,
-    };
-
+  Widget _buildPrayersList(PrayerTimesData data, AdhanSettings? settings) {
     return Column(
       children: data.todayPrayers.entries.map((entry) {
-        final isNext = entry.key == data.nextPrayerName;
-        final color = prayerColors[entry.key] ?? AppColors.primary;
+        return _buildPrayerTile(
+          prayerKey: entry.key,
+          timeStr: entry.value,
+          isNext: entry.key == data.nextPrayerName,
+          adhanEnabled: settings?.isPrayerEnabled(entry.key) ?? true,
+          onAdhanTap: () => _showAdhanSettings(context, settings),
+        );
+      }).toList(),
+    );
+  }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: isNext
-                ? color.withOpacity(0.12)
-                : Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(14),
-            border: isNext
-                ? Border.all(color: color.withOpacity(0.4), width: 1.5)
-                : Border.all(color: AppColors.divider),
+  Widget _buildPrayerTile({
+    required String prayerKey,
+    required String timeStr,
+    required bool isNext,
+    required bool adhanEnabled,
+    required VoidCallback onAdhanTap,
+  }) {
+    final color = _prayerColor(prayerKey);
+    final icon = _prayerIcon(prayerKey);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isNext ? color.withOpacity(0.08) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isNext ? color.withOpacity(0.4) : AppColors.divider,
+          width: isNext ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            trailing: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(_prayerIcon(entry.key), color: color, size: 22),
-            ),
-            title: Text(
-              ArabicUtils.prayerName(entry.key),
-              style: AppTypography.heading3.copyWith(
-                color: isNext ? color : AppColors.textPrimary,
-              ),
-              textDirection: TextDirection.rtl,
-            ),
-            leading: Text(
-              ArabicUtils.toArabicTime(entry.value),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            // Time
+            Text(
+              timeStr,
               style: TextStyle(
                 fontFamily: 'NotoNaskhArabic',
-                fontSize: 18,
-                fontWeight: isNext ? FontWeight.w700 : FontWeight.normal,
+                fontSize: 17,
+                fontWeight: isNext ? FontWeight.w700 : FontWeight.w500,
                 color: isNext ? color : AppColors.textSecondary,
               ),
             ),
+            const Spacer(),
+            // Prayer name + subtitle
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  ArabicUtils.prayerName(prayerKey),
+                  style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isNext ? color : AppColors.textPrimary,
+                  ),
+                ),
+                if (isNext)
+                  Text(
+                    'الصلاة القادمة',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 11,
+                      color: color.withOpacity(0.8),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 8),
+            // Adhan bell toggle
+            GestureDetector(
+              onTap: onAdhanTap,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: adhanEnabled
+                      ? AppColors.gold.withOpacity(0.12)
+                      : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  adhanEnabled ? Icons.notifications_active : Icons.notifications_off_outlined,
+                  color: adhanEnabled ? AppColors.gold : Colors.grey,
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdhanBanner(BuildContext context, AdhanSettings settings) {
+    return GestureDetector(
+      onTap: () => _showAdhanSettings(context, settings),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+            begin: Alignment.centerRight,
+            end: Alignment.centerLeft,
           ),
-        );
-      }).toList(),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.chevron_left, color: Colors.white60, size: 20),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  settings.voice.label,
+                  style: const TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${settings.voice.muezzin} · ${settings.enabledCount} صلوات مفعّلة',
+                  style: const TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.gold.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.spatial_audio, color: AppColors.gold, size: 22),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -205,8 +348,7 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.location_on_outlined,
-            size: 16, color: AppColors.textSecondary),
+        const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
         const SizedBox(width: 4),
         Text(data.locationName, style: AppTypography.caption),
       ],
@@ -222,16 +364,21 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
           children: [
             const Icon(Icons.location_off, size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            Text(
-              'يتطلب هذا الإذن الوصول إلى موقعك لحساب أوقات الصلاة',
+            const Text(
+              'يتطلب التطبيق الوصول إلى موقعك لحساب أوقات الصلاة',
               style: AppTypography.body,
               textAlign: TextAlign.center,
               textDirection: TextDirection.rtl,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () => ref.invalidate(prayerTimesProvider),
-              child: const Text('إعادة المحاولة'),
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
             ),
           ],
         ),
@@ -239,51 +386,323 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
     );
   }
 
-  IconData _prayerIcon(String key) {
+  void _showAdhanSettings(BuildContext context, AdhanSettings? settings) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AdhanSettingsSheet(currentSettings: settings),
+    );
+  }
+
+  Color _prayerColor(String key) {
     switch (key) {
-      case 'fajr':
-        return Icons.wb_twilight;
-      case 'dhuhr':
-        return Icons.wb_sunny;
-      case 'asr':
-        return Icons.wb_cloudy;
-      case 'maghrib':
-        return Icons.wb_twilight;
-      case 'isha':
-        return Icons.nightlight;
-      default:
-        return Icons.access_time;
+      case 'fajr':    return AppColors.fajr;
+      case 'dhuhr':   return AppColors.dhuhr;
+      case 'asr':     return AppColors.asr;
+      case 'maghrib': return AppColors.maghrib;
+      case 'isha':    return AppColors.isha;
+      default:        return AppColors.primary;
     }
   }
 
-  void _showCalculationMethodSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('طريقة حساب أوقات الصلاة',
-                  style: AppTypography.heading3),
-              const SizedBox(height: 16),
-              ...List.generate(
-                6,
-                (i) => ListTile(
-                  title: Text(
-                    ['رابطة العالم الإسلامي', 'ISNA - أمريكا الشمالية',
-                     'الاتحاد الأوروبي', 'كراتشي', 'مصر', 'أم القرى'][i],
-                    style: AppTypography.body,
-                    textDirection: TextDirection.rtl,
+  IconData _prayerIcon(String key) {
+    switch (key) {
+      case 'fajr':    return Icons.wb_twilight;
+      case 'dhuhr':   return Icons.wb_sunny;
+      case 'asr':     return Icons.wb_cloudy_outlined;
+      case 'maghrib': return Icons.nights_stay_outlined;
+      case 'isha':    return Icons.nightlight_round;
+      default:        return Icons.access_time;
+    }
+  }
+}
+
+// ─── Adhan Settings Bottom Sheet ────────────────────────────────────────────
+
+class _AdhanSettingsSheet extends ConsumerWidget {
+  final AdhanSettings? currentSettings;
+  const _AdhanSettingsSheet({this.currentSettings});
+
+  static const _prayers = [
+    ('fajr',    'صلاة الفجر',    Icons.wb_twilight,       AppColors.fajr),
+    ('dhuhr',   'صلاة الظهر',    Icons.wb_sunny,          AppColors.dhuhr),
+    ('asr',     'صلاة العصر',    Icons.wb_cloudy_outlined, AppColors.asr),
+    ('maghrib', 'صلاة المغرب',   Icons.nights_stay_outlined, AppColors.maghrib),
+    ('isha',    'صلاة العشاء',   Icons.nightlight_round,  AppColors.isha),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(adhanSettingsProvider);
+    final notifier = ref.read(adhanSettingsProvider.notifier);
+    final settings = settingsAsync.valueOrNull ?? AdhanSettings.defaults;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.spatial_audio,
+                        color: AppColors.gold, size: 22),
                   ),
-                  onTap: () => Navigator.pop(context),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'إعدادات الأذان',
+                        style: TextStyle(
+                          fontFamily: 'NotoNaskhArabic',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'اختر الصوت وحدّد الصلوات',
+                        style: TextStyle(
+                          fontFamily: 'NotoNaskhArabic',
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 24, indent: 20, endIndent: 20),
+            // Voice selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'صوت الأذان',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: AdhanVoice.values.map((voice) {
+                      final selected = settings.voice == voice;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => notifier.setVoice(voice),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.backgroundLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.divider,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      voice.label,
+                                      style: TextStyle(
+                                        fontFamily: 'NotoNaskhArabic',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: selected
+                                            ? Colors.white
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.record_voice_over,
+                                      size: 16,
+                                      color: selected
+                                          ? AppColors.gold
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  voice.muezzin,
+                                  style: TextStyle(
+                                    fontFamily: 'NotoNaskhArabic',
+                                    fontSize: 11,
+                                    color: selected
+                                        ? Colors.white70
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1, indent: 20, endIndent: 20),
+            // Prayer toggles
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Row(
+                children: [
+                  const Spacer(),
+                  const Text(
+                    'الصلوات المفعّلة',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ..._prayers.map(
+              (p) => _buildPrayerToggle(
+                prayerKey: p.$1,
+                label: p.$2,
+                icon: p.$3,
+                color: p.$4,
+                enabled: settings.isPrayerEnabled(p.$1),
+                onToggle: () => notifier.togglePrayer(p.$1),
+              ),
+            ),
+            // Save button
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final prayerAsync =
+                        ref.read(prayerTimesProvider).valueOrNull;
+                    if (prayerAsync != null) {
+                      final rawTimes = {
+                        'fajr': prayerAsync.prayerTimes.fajr,
+                        'dhuhr': prayerAsync.prayerTimes.dhuhr,
+                        'asr': prayerAsync.prayerTimes.asr,
+                        'maghrib': prayerAsync.prayerTimes.maghrib,
+                        'isha': prayerAsync.prayerTimes.isha,
+                      };
+                      await NotificationService.instance
+                          .schedulePrayerNotifications(
+                        prayerTimes: rawTimes,
+                        settings: settings,
+                      );
+                    }
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.check),
+                  label: const Text(
+                    'حفظ وجدولة التنبيهات',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrayerToggle({
+    required String prayerKey,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool enabled,
+    required VoidCallback onToggle,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      leading: Switch(
+        value: enabled,
+        onChanged: (_) => onToggle(),
+        activeColor: AppColors.primary,
+        activeTrackColor: AppColors.primaryLight.withOpacity(0.4),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'NotoNaskhArabic',
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+        ),
+        textDirection: TextDirection.rtl,
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: enabled ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          color: enabled ? color : Colors.grey,
+          size: 20,
         ),
       ),
     );
