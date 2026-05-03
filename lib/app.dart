@@ -14,7 +14,7 @@ class IslamicApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'تطبيق إسلامي',
+      title: 'الوجهة القبلية',
       debugShowCheckedModeBanner: false,
 
       // RTL Arabic locale
