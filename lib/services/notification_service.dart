@@ -29,7 +29,7 @@ class NotificationService {
     // Madani adhan channel
     await _createChannel(
       id: _channelIdMadani,
-      name: 'أذان مدني — عبدالرحمن خاشقجي',
+      name: 'أذان مدني — عصام بخاري',
       sound: 'adhan_madani',
     );
 

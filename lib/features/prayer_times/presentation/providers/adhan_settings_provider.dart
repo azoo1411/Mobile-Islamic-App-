@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AdhanVoice {
-  madani('madani', 'الأذان المدني', 'عبدالرحمن خاشقجي'),
+  madani('madani', 'الأذان المدني', 'عصام بخاري'),
   makki('makki', 'الأذان المكي', 'هاشم السقاف');
 
   final String key;
