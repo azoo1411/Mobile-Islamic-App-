@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 import 'app.dart';
@@ -56,6 +57,8 @@ class _AppLoaderState extends State<_AppLoader> {
 
   Future<void> _seed() async {
     await DatabaseSeeder(widget.db).seedIfNeeded();
+    // Request notification permission (Android 13+) so adhan alerts work
+    await Permission.notification.request();
     if (mounted) setState(() => _ready = true);
   }
 

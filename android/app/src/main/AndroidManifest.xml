@@ -18,6 +18,9 @@
     <!-- Keep screen on during Quran recitation -->
     <uses-permission android:name="android.permission.KEEP_SCREEN_ON" />
 
+    <!-- Runtime notification permission (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="الوجهة القبلية"
         android:name="${applicationName}"
