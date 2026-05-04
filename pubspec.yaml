@@ -55,8 +55,8 @@ dependencies:
   smooth_page_indicator: ^1.1.0
   percent_indicator: ^4.2.3
 
-  # WebView (live streaming)
-  webview_flutter: ^4.7.0
+  # WebView (live streaming) -- removed: caused Kotlin AGP conflicts
+  # webview_flutter: ^4.7.0
 
   # Utils
   intl: ^0.19.0
