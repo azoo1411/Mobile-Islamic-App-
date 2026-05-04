@@ -1,5 +1,5 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -17,8 +17,7 @@ class _ContactScreenState extends State<ContactScreen> {
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   bool _sending = false;
-
-  static const _recipientEmail = 'a.k.alqubali@gmail.com';
+  bool _sent = false;
 
   @override
   void dispose() {
@@ -30,42 +29,53 @@ class _ContactScreenState extends State<ContactScreen> {
 
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _sending = true);
 
     final name = _nameController.text.trim();
     final subject = _subjectController.text.trim();
     final message = _messageController.text.trim();
 
-    final body = name.isNotEmpty ? 'من: $name\n\n$message' : message;
-
-    final uri = Uri(
-      scheme: 'mailto',
-      path: _recipientEmail,
-      queryParameters: {
-        'subject': subject,
-        'body': body,
-      },
-    );
-
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        if (mounted) _showError();
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: {'Accept': 'application/json'},
+      ));
+
+      await dio.post(
+        'https://formsubmit.co/ajax/a.k.alqubali@gmail.com',
+        data: {
+          'name': name.isNotEmpty ? name : 'مستخدم',
+          'email': 'qibaliguide@gmail.com',
+          'subject': subject,
+          'message': message,
+          '_captcha': 'false',
+          '_template': 'box',
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _sent = true;
+        });
+        _nameController.clear();
+        _subjectController.clear();
+        _messageController.clear();
       }
     } catch (_) {
-      if (mounted) _showError();
-    } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) {
+        setState(() => _sending = false);
+        _showError();
+      }
     }
   }
 
   void _showError() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'لا يوجد تطبيق بريد إلكتروني مثبّت على جهازك',
+      const SnackBar(
+        content: Text(
+          'حدث خطأ أثناء الإرسال، تحقق من اتصالك بالإنترنت',
           textDirection: TextDirection.rtl,
           style: TextStyle(fontFamily: 'NotoNaskhArabic'),
         ),
@@ -94,21 +104,77 @@ class _ContactScreenState extends State<ContactScreen> {
           ),
           centerTitle: true,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 28),
-              _buildForm(),
-              const SizedBox(height: 32),
-              _buildSendButton(),
-              const SizedBox(height: 32),
-              _buildContactInfo(),
-            ],
-          ),
+        body: _sent ? _buildSuccessView() : _buildFormView(),
+      ),
+    );
+  }
+
+  Widget _buildSuccessView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_outline,
+                  color: AppColors.primary, size: 72),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              'تم إرسال رسالتك بنجاح',
+              style: AppTypography.heading2.copyWith(color: AppColors.primary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'شكراً لتواصلك معنا، سنرد عليك في أقرب وقت',
+              style: AppTypography.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 36),
+            ElevatedButton(
+              onPressed: () => setState(() => _sent = false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text(
+                'إرسال رسالة أخرى',
+                style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFormView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 28),
+          _buildForm(),
+          const SizedBox(height: 32),
+          _buildSendButton(),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -139,9 +205,8 @@ class _ContactScreenState extends State<ContactScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'آراؤك واقتراحاتك تهمنا',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white70,
-                  ),
+                  style:
+                      AppTypography.bodySmall.copyWith(color: Colors.white70),
                 ),
               ],
             ),
@@ -259,13 +324,11 @@ class _ContactScreenState extends State<ContactScreen> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+                    strokeWidth: 2, color: Colors.white),
               )
             : const Icon(Icons.send, size: 20),
         label: Text(
-          _sending ? 'جاري الفتح...' : 'إرسال الرسالة',
+          _sending ? 'جاري الإرسال...' : 'إرسال الرسالة',
           style: const TextStyle(
             fontFamily: 'NotoNaskhArabic',
             fontSize: 16,
@@ -275,58 +338,10 @@ class _ContactScreenState extends State<ContactScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 2,
         ),
-      ),
-    );
-  }
-
-  Widget _buildContactInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.alternate_email,
-                color: AppColors.gold, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'البريد الإلكتروني',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _recipientEmail,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'NotoNaskhArabic',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

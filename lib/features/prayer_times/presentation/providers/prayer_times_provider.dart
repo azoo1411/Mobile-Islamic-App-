@@ -55,11 +55,23 @@ final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
     'isha': formatter.format(prayerTimes.isha),
   };
 
-  final nextPrayer = prayerTimes.nextPrayer();
-  final nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
+  final nextPrayerEnum = prayerTimes.nextPrayer();
   final now = DateTime.now();
+  final String nextName;
+  final DateTime? nextPrayerTime;
+
+  if (nextPrayerEnum == Prayer.none) {
+    // After Isha — next prayer is tomorrow's Fajr
+    final tomorrow = DateComponents.from(now.add(const Duration(days: 1)));
+    final tomorrowTimes = PrayerTimes(coordinates, tomorrow, params);
+    nextPrayerTime = tomorrowTimes.fajr;
+    nextName = 'fajr';
+  } else {
+    nextPrayerTime = prayerTimes.timeForPrayer(nextPrayerEnum);
+    nextName = _prayerEnumToKey(nextPrayerEnum);
+  }
+
   final timeUntil = nextPrayerTime?.difference(now) ?? Duration.zero;
-  final nextName = _prayerEnumToKey(nextPrayer);
 
   final rawTimes = {
     'fajr': prayerTimes.fajr,

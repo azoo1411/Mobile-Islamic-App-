@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -20,6 +21,7 @@ class PrayerTimesScreen extends ConsumerStatefulWidget {
 class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   Timer? _timer;
   Duration _countdown = Duration.zero;
+  String? _lastPrayerKey;
 
   @override
   void initState() {
@@ -76,7 +78,11 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
           ),
           error: (e, _) => _buildError(context, e.toString()),
           data: (data) {
-            if (_countdown == Duration.zero) {
+            // Reset countdown when the next prayer changes or on first load
+            if (_lastPrayerKey != data.nextPrayerName) {
+              _lastPrayerKey = data.nextPrayerName;
+              _countdown = data.timeUntilNext;
+            } else if (_countdown == Duration.zero) {
               _countdown = data.timeUntilNext;
             }
             return _buildBody(data, settingsAsync.valueOrNull);
@@ -420,20 +426,60 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
 
 // ─── Adhan Settings Bottom Sheet ────────────────────────────────────────────
 
-class _AdhanSettingsSheet extends ConsumerWidget {
+class _AdhanSettingsSheet extends ConsumerStatefulWidget {
   final AdhanSettings? currentSettings;
   const _AdhanSettingsSheet({this.currentSettings});
 
+  @override
+  ConsumerState<_AdhanSettingsSheet> createState() =>
+      _AdhanSettingsSheetState();
+}
+
+class _AdhanSettingsSheetState extends ConsumerState<_AdhanSettingsSheet> {
   static const _prayers = [
-    ('fajr',    'صلاة الفجر',    Icons.wb_twilight,       AppColors.fajr),
-    ('dhuhr',   'صلاة الظهر',    Icons.wb_sunny,          AppColors.dhuhr),
-    ('asr',     'صلاة العصر',    Icons.wb_cloudy_outlined, AppColors.asr),
-    ('maghrib', 'صلاة المغرب',   Icons.nights_stay_outlined, AppColors.maghrib),
-    ('isha',    'صلاة العشاء',   Icons.nightlight_round,  AppColors.isha),
+    ('fajr', 'صلاة الفجر', Icons.wb_twilight, AppColors.fajr),
+    ('dhuhr', 'صلاة الظهر', Icons.wb_sunny, AppColors.dhuhr),
+    ('asr', 'صلاة العصر', Icons.wb_cloudy_outlined, AppColors.asr),
+    ('maghrib', 'صلاة المغرب', Icons.nights_stay_outlined, AppColors.maghrib),
+    ('isha', 'صلاة العشاء', Icons.nightlight_round, AppColors.isha),
   ];
 
+  AudioPlayer? _player;
+  AdhanVoice? _playingVoice;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _player?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePreview(AdhanVoice voice) async {
+    if (_playingVoice == voice) {
+      await _player?.stop();
+      if (mounted) setState(() => _playingVoice = null);
+      return;
+    }
+    await _player?.stop();
+    _player ??= AudioPlayer();
+    if (mounted) setState(() => _playingVoice = voice);
+    try {
+      final file = voice == AdhanVoice.madani
+          ? 'assets/audio/adhan_madani.wav'
+          : 'assets/audio/adhan_makki.wav';
+      await _player!.setAudioSource(AudioSource.asset(file));
+      await _player!.play();
+      _player!.playerStateStream.listen((state) {
+        if (state.processingState == ProcessingState.completed) {
+          if (mounted) setState(() => _playingVoice = null);
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _playingVoice = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settingsAsync = ref.watch(adhanSettingsProvider);
     final notifier = ref.read(adhanSettingsProvider.notifier);
     final settings = settingsAsync.valueOrNull ?? AdhanSettings.defaults;
@@ -448,7 +494,6 @@ class _AdhanSettingsSheet extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 40,
@@ -458,7 +503,6 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
@@ -518,14 +562,14 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                   Row(
                     children: AdhanVoice.values.map((voice) {
                       final selected = settings.voice == voice;
+                      final isPlaying = _playingVoice == voice;
                       return Expanded(
                         child: GestureDetector(
                           onTap: () => notifier.setVoice(voice),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
+                            padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
                             decoration: BoxDecoration(
                               color: selected
                                   ? AppColors.primary
@@ -541,26 +585,60 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      voice.label,
-                                      style: TextStyle(
-                                        fontFamily: 'NotoNaskhArabic',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: selected
-                                            ? Colors.white
-                                            : AppColors.textPrimary,
+                                    // Play preview button
+                                    GestureDetector(
+                                      onTap: () => _togglePreview(voice),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(5),
+                                        decoration: BoxDecoration(
+                                          color: isPlaying
+                                              ? AppColors.gold
+                                              : (selected
+                                                  ? Colors.white
+                                                      .withOpacity(0.15)
+                                                  : AppColors.primary
+                                                      .withOpacity(0.1)),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          isPlaying
+                                              ? Icons.stop_rounded
+                                              : Icons.play_arrow_rounded,
+                                          size: 16,
+                                          color: isPlaying
+                                              ? Colors.white
+                                              : (selected
+                                                  ? AppColors.gold
+                                                  : AppColors.primary),
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      Icons.record_voice_over,
-                                      size: 16,
-                                      color: selected
-                                          ? AppColors.gold
-                                          : AppColors.textSecondary,
+                                    // Label + icon
+                                    Row(
+                                      children: [
+                                        Text(
+                                          voice.label,
+                                          style: TextStyle(
+                                            fontFamily: 'NotoNaskhArabic',
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: selected
+                                                ? Colors.white
+                                                : AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.record_voice_over,
+                                          size: 16,
+                                          color: selected
+                                              ? AppColors.gold
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -575,6 +653,19 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                                         : AppColors.textSecondary,
                                   ),
                                 ),
+                                if (isPlaying) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '▶ جاري التشغيل...',
+                                    style: TextStyle(
+                                      fontFamily: 'NotoNaskhArabic',
+                                      fontSize: 10,
+                                      color: selected
+                                          ? AppColors.gold
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -587,7 +678,6 @@ class _AdhanSettingsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             const Divider(height: 1, indent: 20, endIndent: 20),
-            // Prayer toggles
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: Row(
@@ -615,7 +705,6 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                 onToggle: () => notifier.togglePrayer(p.$1),
               ),
             ),
-            // Save button
             Padding(
               padding: EdgeInsets.fromLTRB(
                   20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
@@ -623,6 +712,7 @@ class _AdhanSettingsSheet extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    await _player?.stop();
                     final prayerAsync =
                         ref.read(prayerTimesProvider).valueOrNull;
                     if (prayerAsync != null) {
@@ -696,7 +786,9 @@ class _AdhanSettingsSheet extends ConsumerWidget {
       trailing: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: enabled ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+          color: enabled
+              ? color.withOpacity(0.1)
+              : Colors.grey.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
