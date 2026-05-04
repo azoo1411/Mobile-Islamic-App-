@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -17,7 +18,6 @@ class _ContactScreenState extends State<ContactScreen> {
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   bool _sending = false;
-  bool _sent = false;
 
   @override
   void dispose() {
@@ -34,53 +34,101 @@ class _ContactScreenState extends State<ContactScreen> {
     final name = _nameController.text.trim();
     final subject = _subjectController.text.trim();
     final message = _messageController.text.trim();
+    final body = name.isNotEmpty ? 'من: $name\n\n$message' : message;
+
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'qibaliguide@gmail.com',
+      queryParameters: {'subject': subject, 'body': body},
+    );
 
     try {
-      final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {'Accept': 'application/json'},
-      ));
-
-      await dio.post(
-        'https://formsubmit.co/ajax/a.k.alqubali@gmail.com',
-        data: {
-          'name': name.isNotEmpty ? name : 'مستخدم',
-          'email': 'qibaliguide@gmail.com',
-          'subject': subject,
-          'message': message,
-          '_captcha': 'false',
-          '_template': 'box',
-        },
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
       );
-
-      if (mounted) {
-        setState(() {
-          _sending = false;
-          _sent = true;
-        });
-        _nameController.clear();
-        _subjectController.clear();
-        _messageController.clear();
-      }
+      if (!launched && mounted) _showFallback(subject, body);
     } catch (_) {
-      if (mounted) {
-        setState(() => _sending = false);
-        _showError();
-      }
+      if (mounted) _showFallback(subject, body);
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
   }
 
-  void _showError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'حدث خطأ أثناء الإرسال، تحقق من اتصالك بالإنترنت',
-          textDirection: TextDirection.rtl,
-          style: TextStyle(fontFamily: 'NotoNaskhArabic'),
+  void _showFallback(String subject, String body) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+              20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'لم يُعثر على تطبيق بريد',
+                style: TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'يمكنك إرسال رسالتك مباشرةً إلى:\nqibaliguide@gmail.com',
+                style: AppTypography.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: SelectableText(
+                  'الموضوع: $subject\n\n$body',
+                  style: AppTypography.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(
+                        text: 'الموضوع: $subject\n\n$body'));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم نسخ الرسالة',
+                            style: TextStyle(fontFamily: 'NotoNaskhArabic')),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy),
+                  label: const Text('نسخ الرسالة',
+                      style: TextStyle(fontFamily: 'NotoNaskhArabic')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -104,77 +152,20 @@ class _ContactScreenState extends State<ContactScreen> {
           ),
           centerTitle: true,
         ),
-        body: _sent ? _buildSuccessView() : _buildFormView(),
-      ),
-    );
-  }
-
-  Widget _buildSuccessView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle_outline,
-                  color: AppColors.primary, size: 72),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              'تم إرسال رسالتك بنجاح',
-              style: AppTypography.heading2.copyWith(color: AppColors.primary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'شكراً لتواصلك معنا، سنرد عليك في أقرب وقت',
-              style: AppTypography.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 36),
-            ElevatedButton(
-              onPressed: () => setState(() => _sent = false),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text(
-                'إرسال رسالة أخرى',
-                style: TextStyle(
-                    fontFamily: 'NotoNaskhArabic',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 28),
+              _buildForm(),
+              const SizedBox(height: 32),
+              _buildSendButton(),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFormView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 28),
-          _buildForm(),
-          const SizedBox(height: 32),
-          _buildSendButton(),
-          const SizedBox(height: 20),
-        ],
       ),
     );
   }
@@ -198,16 +189,13 @@ class _ContactScreenState extends State<ContactScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'نسعد بتواصلك معنا',
-                  style: AppTypography.heading3.copyWith(color: Colors.white),
-                ),
+                Text('نسعد بتواصلك معنا',
+                    style:
+                        AppTypography.heading3.copyWith(color: Colors.white)),
                 const SizedBox(height: 4),
-                Text(
-                  'آراؤك واقتراحاتك تهمنا',
-                  style:
-                      AppTypography.bodySmall.copyWith(color: Colors.white70),
-                ),
+                Text('آراؤك واقتراحاتك تهمنا',
+                    style: AppTypography.bodySmall
+                        .copyWith(color: Colors.white70)),
               ],
             ),
           ),
@@ -222,48 +210,33 @@ class _ContactScreenState extends State<ContactScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLabel('الاسم (اختياري)'),
+          _label('الاسم (اختياري)'),
           const SizedBox(height: 8),
-          _buildField(
-            controller: _nameController,
-            hint: 'أدخل اسمك',
-            icon: Icons.person_outline,
-          ),
+          _field(controller: _nameController, hint: 'أدخل اسمك',
+              icon: Icons.person_outline),
           const SizedBox(height: 20),
-          _buildLabel('الموضوع'),
+          _label('الموضوع'),
           const SizedBox(height: 8),
-          _buildField(
-            controller: _subjectController,
-            hint: 'موضوع رسالتك',
-            icon: Icons.subject_outlined,
-            required: true,
-          ),
+          _field(controller: _subjectController, hint: 'موضوع رسالتك',
+              icon: Icons.subject_outlined, required: true),
           const SizedBox(height: 20),
-          _buildLabel('الرسالة'),
+          _label('الرسالة'),
           const SizedBox(height: 8),
-          _buildField(
-            controller: _messageController,
-            hint: 'اكتب رسالتك هنا...',
-            icon: Icons.message_outlined,
-            maxLines: 6,
-            required: true,
-          ),
+          _field(controller: _messageController,
+              hint: 'اكتب رسالتك هنا...',
+              icon: Icons.message_outlined, maxLines: 6, required: true),
         ],
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTypography.bodySmall.copyWith(
-        color: AppColors.textSecondary,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
+  Widget _label(String text) => Text(
+        text,
+        style: AppTypography.bodySmall.copyWith(
+            color: AppColors.textSecondary, fontWeight: FontWeight.w700),
+      );
 
-  Widget _buildField({
+  Widget _field({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -283,32 +256,28 @@ class _ContactScreenState extends State<ContactScreen> {
         filled: true,
         fillColor: Colors.white,
         contentPadding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: maxLines > 1 ? 16 : 14,
-        ),
+            horizontal: 16, vertical: maxLines > 1 ? 16 : 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                const BorderSide(color: AppColors.primary, width: 1.5)),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.error)),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                const BorderSide(color: AppColors.error, width: 1.5)),
       ),
       validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'هذا الحقل مطلوب' : null
+          ? (v) =>
+              (v == null || v.trim().isEmpty) ? 'هذا الحقل مطلوب' : null
           : null,
     );
   }
@@ -321,19 +290,16 @@ class _ContactScreenState extends State<ContactScreen> {
         onPressed: _sending ? null : _send,
         icon: _sending
             ? const SizedBox(
-                width: 18,
-                height: 18,
+                width: 18, height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
-              )
+                    strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.send, size: 20),
         label: Text(
-          _sending ? 'جاري الإرسال...' : 'إرسال الرسالة',
+          _sending ? 'جاري الفتح...' : 'إرسال الرسالة',
           style: const TextStyle(
-            fontFamily: 'NotoNaskhArabic',
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+              fontFamily: 'NotoNaskhArabic',
+              fontSize: 16,
+              fontWeight: FontWeight.w700),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,

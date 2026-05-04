@@ -118,33 +118,41 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
 
   void _computeHeading() {
     if (!mounted) return;
+
+    // Normalize gravity (accelerometer)
     final accMag = math.sqrt(_ax * _ax + _ay * _ay + _az * _az);
     if (accMag < 0.1) return;
+    final ax = _ax / accMag;
+    final ay = _ay / accMag;
+    final az = _az / accMag;
 
-    final gx = _ax / accMag;
-    final gy = _ay / accMag;
-    final gz = _az / accMag;
+    // Android SensorManager cross-product formula for tilt-compensated azimuth
+    // H = magnetometer × gravity  →  points East
+    final hx = _my * az - _mz * ay;
+    final hy = _mz * ax - _mx * az;
+    final hz = _mx * ay - _my * ax;
 
-    // Tilt-compensated heading
-    final pitch = math.atan2(-gx, gz);
-    final roll = math.atan2(gy, math.sqrt(gx * gx + gz * gz));
+    final hMag = math.sqrt(hx * hx + hy * hy + hz * hz);
+    if (hMag < 0.1) return;
+    final hxn = hx / hMag;
+    final hyn = hy / hMag;
+    final hzn = hz / hMag;
 
-    final hx = _mx * math.cos(pitch) + _mz * math.sin(pitch);
-    final hy = _mx * math.sin(roll) * math.sin(pitch) +
-        _my * math.cos(roll) -
-        _mz * math.sin(roll) * math.cos(pitch);
+    // M = gravity × H  →  points North
+    final mmy = az * hxn - ax * hzn;
 
-    final newHeading = (_toDeg(math.atan2(-hy, hx)) + 360) % 360;
+    // Azimuth: clockwise angle from magnetic North
+    // Mirrors Android SensorManager.getOrientation: atan2(-H_y, M_y)
+    final newHeading = (_toDeg(math.atan2(-hyn, mmy)) + 360) % 360;
 
-    // Smooth with wrap-around handling
+    // Smooth with wrap-around handling (α=0.15 for stable but responsive needle)
     var diff = newHeading - _compassHeading;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
 
     setState(() {
-      _compassHeading = (_compassHeading + diff * 0.25 + 360) % 360;
-      _alignmentError =
-          ((_qiblaAngleDeg - _compassHeading) + 360) % 360;
+      _compassHeading = (_compassHeading + diff * 0.15 + 360) % 360;
+      _alignmentError = ((_qiblaAngleDeg - _compassHeading) + 360) % 360;
       if (_alignmentError > 180) _alignmentError = 360 - _alignmentError;
       _isAligned = _alignmentError < 8;
     });
