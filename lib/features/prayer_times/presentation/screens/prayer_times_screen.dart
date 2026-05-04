@@ -22,6 +22,8 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   Timer? _timer;
   Duration _countdown = Duration.zero;
   String? _lastPrayerKey;
+  // Prevent rescheduling more than once per session
+  bool _autoScheduled = false;
 
   @override
   void initState() {
@@ -43,6 +45,18 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   Widget build(BuildContext context) {
     final prayerAsync = ref.watch(prayerTimesProvider);
     final settingsAsync = ref.watch(adhanSettingsProvider);
+
+    // Re-schedule when adhan settings change (e.g. user enables/disables a prayer)
+    ref.listen(adhanSettingsProvider, (previous, next) {
+      final prayers = prayerAsync.valueOrNull;
+      final settings = next.valueOrNull;
+      if (prayers != null && settings != null) {
+        NotificationService.instance.schedulePrayerNotifications(
+          prayerTimes: prayers.rawTimes,
+          settings: settings,
+        );
+      }
+    });
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -85,7 +99,16 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
             } else if (_countdown == Duration.zero) {
               _countdown = data.timeUntilNext;
             }
-            return _buildBody(data, settingsAsync.valueOrNull);
+            // Auto-schedule notifications once per session when data loads
+            final settings = settingsAsync.valueOrNull;
+            if (!_autoScheduled && settings != null) {
+              _autoScheduled = true;
+              NotificationService.instance.schedulePrayerNotifications(
+                prayerTimes: data.rawTimes,
+                settings: settings,
+              );
+            }
+            return _buildBody(data, settings);
           },
         ),
       ),

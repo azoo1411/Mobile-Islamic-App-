@@ -10,9 +10,10 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  static const _channelIdMadani = 'adhan_madani';
-  static const _channelIdMakki = 'adhan_makki';
-  static const _channelIdSilent = 'prayer_silent';
+  // v2: forced channel recreation to pick up correct WAV sound files
+  static const _channelIdMadani = 'adhan_madani_v2';
+  static const _channelIdMakki = 'adhan_makki_v2';
+  static const _channelIdSilent = 'prayer_silent_v2';
 
   Future<void> initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
