@@ -38,6 +38,11 @@ class QuickAccessGrid extends StatelessWidget {
         icon: Icons.mail_outline,
         color: Color(0xFF6B48FF),
         route: '/contact'),
+    _QuickItem(
+        label: 'بث مباشر',
+        icon: Icons.live_tv,
+        color: Color(0xFFE53935),
+        route: '/live'),
   ];
 
   @override
