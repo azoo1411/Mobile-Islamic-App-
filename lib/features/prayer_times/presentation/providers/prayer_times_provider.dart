@@ -13,6 +13,9 @@ class PrayerTimesData {
   final Map<String, String> todayPrayers;
   final PrayerTimes prayerTimes;
   final Map<String, DateTime> rawTimes;
+  final double lat;
+  final double lon;
+  final int methodIndex;
 
   PrayerTimesData({
     required this.locationName,
@@ -21,6 +24,9 @@ class PrayerTimesData {
     required this.todayPrayers,
     required this.prayerTimes,
     required this.rawTimes,
+    required this.lat,
+    required this.lon,
+    required this.methodIndex,
   });
 }
 
@@ -39,6 +45,10 @@ final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
 
   final prefs = await SharedPreferences.getInstance();
   final methodIndex = prefs.getInt(AppConstants.prefCalcMethod) ?? 0;
+
+  // Cache coordinates for background notification scheduling
+  await prefs.setDouble(AppConstants.prefLastLat, position.latitude);
+  await prefs.setDouble(AppConstants.prefLastLon, position.longitude);
 
   final coordinates = Coordinates(position.latitude, position.longitude);
   final params = _getCalculationParams(methodIndex);
@@ -89,6 +99,9 @@ final prayerTimesProvider = FutureProvider<PrayerTimesData>((ref) async {
     todayPrayers: prayers,
     prayerTimes: prayerTimes,
     rawTimes: rawTimes,
+    lat: position.latitude,
+    lon: position.longitude,
+    methodIndex: methodIndex,
   );
 });
 

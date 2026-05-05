@@ -1,6 +1,9 @@
+import 'package:adhan/adhan.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../core/constants/app_constants.dart';
 import '../core/utils/arabic_utils.dart';
 import '../features/prayer_times/presentation/providers/adhan_settings_provider.dart';
 
@@ -10,10 +13,12 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  // v2: forced channel recreation to pick up correct WAV sound files
   static const _channelIdMadani = 'adhan_madani_v2';
   static const _channelIdMakki = 'adhan_makki_v2';
   static const _channelIdSilent = 'prayer_silent_v2';
+
+  // IDs 0–69 reserved for 7-day prayer schedule (7 days × 5 prayers × 2 slots)
+  static const int _scheduleSlots = 70;
 
   Future<void> initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -27,24 +32,11 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    // Madani adhan channel
-    await _createChannel(
-      id: _channelIdMadani,
-      name: 'أذان مدني — عصام بخاري',
-      sound: 'adhan_madani',
-    );
+    await _createChannel(id: _channelIdMadani, name: 'أذان مدني — عصام بخاري', sound: 'adhan_madani');
+    await _createChannel(id: _channelIdMakki, name: 'أذان مكي — هاشم السقاف', sound: 'adhan_makki');
 
-    // Makki adhan channel
-    await _createChannel(
-      id: _channelIdMakki,
-      name: 'أذان مكي — هاشم السقاف',
-      sound: 'adhan_makki',
-    );
-
-    // Silent notification channel (for disabled adhan)
     await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(
           const AndroidNotificationChannel(
             _channelIdSilent,
@@ -63,8 +55,7 @@ class NotificationService {
     required String sound,
   }) async {
     await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(
           AndroidNotificationChannel(
             id,
@@ -78,72 +69,118 @@ class NotificationService {
         );
   }
 
-  Future<void> schedulePrayerNotifications({
-    required Map<String, DateTime> prayerTimes,
+  /// Schedule 7 days of prayer notifications (35 total).
+  /// Call this whenever the app starts or settings change.
+  Future<void> scheduleWeeklyAdhan({
+    required double lat,
+    required double lon,
+    required int methodIndex,
     required AdhanSettings settings,
   }) async {
-    // Cancel existing prayer notifications
-    for (int i = 0; i < 10; i++) {
+    // Cancel all existing prayer schedule slots
+    for (int i = 0; i < _scheduleSlots; i++) {
       await _plugin.cancel(i);
     }
 
-    int id = 0;
-    for (final entry in prayerTimes.entries) {
-      final prayerKey = entry.key;
-      final prayerName = ArabicUtils.prayerName(prayerKey);
-      final time = entry.value;
+    final coordinates = Coordinates(lat, lon);
+    final params = _calcParams(methodIndex);
+    final now = DateTime.now();
+    final prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-      if (!time.isAfter(DateTime.now())) {
-        id++;
-        continue;
-      }
+    int notifId = 0;
+    for (int day = 0; day < 7; day++) {
+      final date = now.add(Duration(days: day));
+      final components = DateComponents.from(date);
+      final times = PrayerTimes(coordinates, components, params);
 
-      final adhanEnabled = settings.isPrayerEnabled(prayerKey);
-      final channelId = adhanEnabled
-          ? (settings.voice == AdhanVoice.makki
-              ? _channelIdMakki
-              : _channelIdMadani)
-          : _channelIdSilent;
+      final dayTimes = {
+        'fajr': times.fajr,
+        'dhuhr': times.dhuhr,
+        'asr': times.asr,
+        'maghrib': times.maghrib,
+        'isha': times.isha,
+      };
 
-      final soundRaw = adhanEnabled
-          ? RawResourceAndroidNotificationSound(
-              settings.voice == AdhanVoice.makki ? 'adhan_makki' : 'adhan_madani',
-            )
-          : null;
+      for (final prayerKey in prayers) {
+        final time = dayTimes[prayerKey]!;
+        if (!time.isAfter(now)) {
+          notifId++;
+          continue;
+        }
 
-      await _plugin.zonedSchedule(
-        id++,
-        'حان وقت $prayerName',
-        adhanEnabled
-            ? 'اللهُ أَكْبَر، اللهُ أَكْبَر — ${settings.voice.muezzin}'
-            : 'حان وقت صلاة $prayerName',
-        tz.TZDateTime.from(time, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channelId,
-            adhanEnabled ? settings.voice.label : 'تنبيه صامت',
-            channelDescription: 'إشعار وقت الصلاة',
-            importance: Importance.max,
-            priority: Priority.high,
-            sound: soundRaw,
-            playSound: adhanEnabled,
-            enableVibration: true,
-            styleInformation: BigTextStyleInformation(
-              'اللهُ أَكْبَر، اللهُ أَكْبَر، أَشْهَدُ أَن لَا إِلَهَ إِلَّا الله',
+        final adhanEnabled = settings.isPrayerEnabled(prayerKey);
+        final prayerName = ArabicUtils.prayerName(prayerKey);
+        final channelId = adhanEnabled
+            ? (settings.voice == AdhanVoice.makki ? _channelIdMakki : _channelIdMadani)
+            : _channelIdSilent;
+        final soundRaw = adhanEnabled
+            ? RawResourceAndroidNotificationSound(
+                settings.voice == AdhanVoice.makki ? 'adhan_makki' : 'adhan_madani',
+              )
+            : null;
+
+        await _plugin.zonedSchedule(
+          notifId++,
+          'حان وقت $prayerName',
+          adhanEnabled
+              ? 'اللهُ أَكْبَر، اللهُ أَكْبَر — ${settings.voice.muezzin}'
+              : 'حان وقت صلاة $prayerName',
+          tz.TZDateTime.from(time, tz.local),
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channelId,
+              adhanEnabled ? settings.voice.label : 'تنبيه صامت',
+              channelDescription: 'إشعار وقت الصلاة',
+              importance: Importance.max,
+              priority: Priority.high,
+              sound: soundRaw,
+              playSound: adhanEnabled,
+              enableVibration: true,
+              styleInformation: BigTextStyleInformation(
+                'اللهُ أَكْبَر، اللهُ أَكْبَر، أَشْهَدُ أَن لَا إِلَهَ إِلَّا الله',
+              ),
+              largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             ),
-            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: adhanEnabled,
+            ),
           ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: adhanEnabled,
-          ),
-        ),
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      );
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+      }
     }
+  }
+
+  /// Schedule using last-known saved coordinates (called at app startup).
+  Future<void> scheduleFromSavedLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble(AppConstants.prefLastLat);
+    final lon = prefs.getDouble(AppConstants.prefLastLon);
+    if (lat == null || lon == null) return;
+
+    final methodIndex = prefs.getInt(AppConstants.prefCalcMethod) ?? 0;
+
+    final voiceKey = prefs.getString('adhan_voice') ?? AdhanVoice.madani.key;
+    final voice = AdhanVoice.values.firstWhere(
+      (v) => v.key == voiceKey,
+      orElse: () => AdhanVoice.madani,
+    );
+    const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+    final enabled = {
+      for (final p in prayers) p: prefs.getBool('adhan_$p') ?? true,
+    };
+    final settings = AdhanSettings(voice: voice, enabledPrayers: enabled);
+
+    await scheduleWeeklyAdhan(
+      lat: lat,
+      lon: lon,
+      methodIndex: methodIndex,
+      settings: settings,
+    );
   }
 
   Future<void> showInstantNotification({
@@ -165,4 +202,21 @@ class NotificationService {
   }
 
   Future<void> cancelAll() => _plugin.cancelAll();
+}
+
+CalculationParameters _calcParams(int methodIndex) {
+  switch (methodIndex) {
+    case 1:
+      return CalculationMethod.north_america.getParameters();
+    case 2:
+      return CalculationMethod.moon_sighting_committee.getParameters();
+    case 3:
+      return CalculationMethod.karachi.getParameters();
+    case 4:
+      return CalculationMethod.egyptian.getParameters();
+    case 5:
+      return CalculationMethod.umm_al_qura.getParameters();
+    default:
+      return CalculationMethod.muslim_world_league.getParameters();
+  }
 }

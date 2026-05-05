@@ -46,13 +46,15 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
     final prayerAsync = ref.watch(prayerTimesProvider);
     final settingsAsync = ref.watch(adhanSettingsProvider);
 
-    // Re-schedule when adhan settings change (e.g. user enables/disables a prayer)
+    // Re-schedule 7 days when adhan settings change
     ref.listen(adhanSettingsProvider, (previous, next) {
       final prayers = prayerAsync.valueOrNull;
       final settings = next.valueOrNull;
       if (prayers != null && settings != null) {
-        NotificationService.instance.schedulePrayerNotifications(
-          prayerTimes: prayers.rawTimes,
+        NotificationService.instance.scheduleWeeklyAdhan(
+          lat: prayers.lat,
+          lon: prayers.lon,
+          methodIndex: prayers.methodIndex,
           settings: settings,
         );
       }
@@ -99,12 +101,14 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
             } else if (_countdown == Duration.zero) {
               _countdown = data.timeUntilNext;
             }
-            // Auto-schedule notifications once per session when data loads
+            // Schedule 7-day adhan once per session when location data loads
             final settings = settingsAsync.valueOrNull;
             if (!_autoScheduled && settings != null) {
               _autoScheduled = true;
-              NotificationService.instance.schedulePrayerNotifications(
-                prayerTimes: data.rawTimes,
+              NotificationService.instance.scheduleWeeklyAdhan(
+                lat: data.lat,
+                lon: data.lon,
+                methodIndex: data.methodIndex,
                 settings: settings,
               );
             }
@@ -739,16 +743,10 @@ class _AdhanSettingsSheetState extends ConsumerState<_AdhanSettingsSheet> {
                     final prayerAsync =
                         ref.read(prayerTimesProvider).valueOrNull;
                     if (prayerAsync != null) {
-                      final rawTimes = {
-                        'fajr': prayerAsync.prayerTimes.fajr,
-                        'dhuhr': prayerAsync.prayerTimes.dhuhr,
-                        'asr': prayerAsync.prayerTimes.asr,
-                        'maghrib': prayerAsync.prayerTimes.maghrib,
-                        'isha': prayerAsync.prayerTimes.isha,
-                      };
-                      await NotificationService.instance
-                          .schedulePrayerNotifications(
-                        prayerTimes: rawTimes,
+                      await NotificationService.instance.scheduleWeeklyAdhan(
+                        lat: prayerAsync.lat,
+                        lon: prayerAsync.lon,
+                        methodIndex: prayerAsync.methodIndex,
                         settings: settings,
                       );
                     }

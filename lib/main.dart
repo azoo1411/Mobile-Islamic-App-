@@ -25,6 +25,8 @@ void main() async {
 
   tz.initializeTimeZones();
   await NotificationService.instance.initialize();
+  // Reschedule 7-day adhan using last-known coordinates (works with app closed)
+  await NotificationService.instance.scheduleFromSavedLocation();
 
   final db = AppDatabase();
 
