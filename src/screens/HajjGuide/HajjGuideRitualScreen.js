@@ -146,7 +146,7 @@ export default function HajjGuideRitualScreen() {
 
             {/* Audio playback */}
             <View style={styles.audioContainer}>
-              <AudioButton label="Listen to Dua" />
+              <AudioButton duaText={ritual.dua} label="استمع للدعاء" />
             </View>
           </SectionCard>
         ) : null}

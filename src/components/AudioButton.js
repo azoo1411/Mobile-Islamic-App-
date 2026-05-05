@@ -1,28 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator } from 'react-native';
+import * as Speech from 'expo-speech';
 import { Colors, Spacing, BorderRadius, Shadow } from '../theme';
 
-/**
- * Audio playback button for dua recitation.
- * Wire `onPlay` and `onPause` to expo-av for real audio.
- */
-export default function AudioButton({ label = 'Listen to Dua', onPlay, onPause }) {
+export default function AudioButton({ duaText = '', label = 'استمع للدعاء' }) {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Stop speech when component unmounts (user navigates away)
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
+
+  // Stop previous dua if duaText changes (new ritual)
+  useEffect(() => {
+    Speech.stop();
+    setPlaying(false);
+  }, [duaText]);
 
   const handlePress = async () => {
     if (loading) return;
 
     if (playing) {
+      await Speech.stop();
       setPlaying(false);
-      onPause && onPause();
-    } else {
-      setLoading(true);
-      // Simulate load time; replace with real audio logic via expo-av
-      await new Promise(r => setTimeout(r, 600));
+      return;
+    }
+
+    if (!duaText) return;
+
+    setLoading(true);
+    try {
+      await Speech.stop(); // ensure nothing is running
       setLoading(false);
       setPlaying(true);
-      onPlay && onPlay();
+
+      Speech.speak(duaText, {
+        language: 'ar-SA',
+        rate: 0.75,       // slower = clearer for prayers
+        pitch: 1.0,
+        onDone: () => setPlaying(false),
+        onError: () => setPlaying(false),
+        onStopped: () => setPlaying(false),
+      });
+    } catch {
+      setLoading(false);
+      setPlaying(false);
     }
   };
 
@@ -40,9 +65,14 @@ export default function AudioButton({ label = 'Listen to Dua', onPlay, onPause }
         )}
       </View>
       <View>
-        <Text style={styles.label}>{playing ? 'Pause' : label}</Text>
-        <Text style={styles.sublabel}>Audio Recitation</Text>
+        <Text style={styles.label}>{playing ? 'إيقاف' : label}</Text>
+        <Text style={styles.sublabel}>
+          {playing ? 'جاري التلاوة...' : 'اضغط للاستماع'}
+        </Text>
       </View>
+
+      {/* Animated pulse indicator while playing */}
+      {playing && <View style={styles.playingDot} />}
     </TouchableOpacity>
   );
 }
@@ -79,5 +109,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.65)',
     fontSize: 11,
     marginTop: 1,
+  },
+  playingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.secondary,
+    marginLeft: 'auto',
   },
 });
