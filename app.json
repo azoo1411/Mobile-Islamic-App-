@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Islamic App",
+    "slug": "mobile-islamic-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F9F4EE"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.islamicapp.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E4D2B"
+      },
+      "package": "com.islamicapp.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

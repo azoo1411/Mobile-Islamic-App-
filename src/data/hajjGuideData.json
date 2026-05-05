@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "title_ar": "مناسك الحج",
+    "title_en": "Hajj Guide",
+    "subtitle_en": "A Step-by-Step Journey",
+    "total_steps": 9,
+    "version": "1.0.0"
+  },
+  "hajjGuide": [
+    {
+      "id": 1,
+      "title_ar": "الإحرام",
+      "title_en": "Ihram",
+      "subtitle_en": "Enter the Sacred State",
+      "icon": "🤍",
+      "color_accent": "#E8E4DC",
+      "date_hint": "Before 8th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of a pilgrim in white Ihram garments standing before a glowing sunrise horizon, soft beige white and gold color palette, spiritual light rays descending from above, silhouette figure with no face details, gentle Mecca mountain backdrop in the distance, serene and peaceful atmosphere, calm mist at ground level, modern clean flat vector art style, square format 1:1, no text no watermark",
+      "description": "Enter the sacred state of Ihram — your spiritual and physical preparation before Hajj begins.",
+      "steps": [
+        "Perform Ghusl (full ritual bath) with intention of Ihram",
+        "Men: Wear two white unstitched cloths. Women: Wear modest regular clothes",
+        "State your Niyyah (intention) for Hajj aloud",
+        "Recite the Talbiyah: لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ",
+        "Observe Ihram restrictions — no perfume, no cutting hair or nails, no intimacy"
+      ],
+      "tip": "Trim nails, remove unwanted hair, and apply unscented soap BEFORE entering Ihram. These are not permitted after.",
+      "dua": "لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ، لَبَّيْكَ لَا شَرِيكَ لَكَ لَبَّيْكَ، إِنَّ الْحَمْدَ وَالنِّعْمَةَ لَكَ وَالْمُلْكَ، لَا شَرِيكَ لَكَ",
+      "dua_transliteration": "Labbayk Allahumma labbayk, labbayk la shareeka laka labbayk, innal hamda wan-ni'mata laka wal-mulk, la shareeka lak",
+      "dua_translation": "Here I am, O Allah, here I am. Here I am, You have no partner, here I am. Verily all praise and blessings are Yours, and all sovereignty. You have no partner."
+    },
+    {
+      "id": 2,
+      "title_ar": "يوم التروية — منى",
+      "title_en": "Mina – Day of Tarwiyah",
+      "subtitle_en": "8th Dhul Hijjah",
+      "icon": "⛺",
+      "color_accent": "#DCE8DC",
+      "date_hint": "8th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of rows of large white pilgrim tents filling the peaceful Valley of Mina at golden dusk, soft sage green hills and warm golden sunset sky above, silhouette pilgrims walking calmly between white tents, layered mountain backdrop, spiritual tranquil mood, soft haze near ground, modern clean flat vector art, square format 1:1, soft beige white gold and deep green palette, no text no watermark",
+      "description": "Spend the Day of Tarwiyah in Mina — rest, pray all five prayers, and prepare your heart for Arafat.",
+      "steps": [
+        "Travel to Mina on the 8th of Dhul Hijjah (after Fajr prayer)",
+        "Shorten 4-rak'ah prayers to 2 rak'ahs (do NOT combine them in Mina)",
+        "Pray all five daily prayers in Mina",
+        "Rest, recite the Quran, and make dhikr",
+        "Sleep early — prepare mentally and spiritually for Arafat"
+      ],
+      "tip": "Stay well hydrated and sleep as early as possible. Arafat tomorrow is the single most important pillar of Hajj.",
+      "dua": "اللَّهُمَّ إِنِّي أَسْأَلُكَ رِضَاكَ وَالْجَنَّةَ، وَأَعُوذُ بِكَ مِنْ سَخَطِكَ وَالنَّارِ",
+      "dua_transliteration": "Allahumma inni as'aluka ridaka wal-jannah, wa a'udhu bika min sakhatika wan-nar",
+      "dua_translation": "O Allah, I ask You for Your pleasure and Paradise, and I seek refuge in You from Your anger and the Fire."
+    },
+    {
+      "id": 3,
+      "title_ar": "يوم عرفة",
+      "title_en": "The Standing at Arafat",
+      "subtitle_en": "9th Dhul Hijjah — The Peak of Hajj",
+      "icon": "🌅",
+      "color_accent": "#FFF0CC",
+      "date_hint": "9th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of a vast multitude of white-clad pilgrim silhouettes standing with hands raised in supplication on the plain of Arafat, Jabal al-Rahmah (Mount of Mercy) visible as a gentle hill in soft golden background, warm radiant sunset light filling the sky, white and gold color palette with gentle spiritual atmospheric haze, emotional and powerful mood, modern clean Islamic art style, square format 1:1, no text no watermark",
+      "description": "Stand at Arafat — the greatest pillar of Hajj. Supplicate with all your heart, seek forgiveness, and pour out your soul to Allah.",
+      "steps": [
+        "Arrive at Arafat before noon on the 9th of Dhul Hijjah",
+        "Pray Dhuhr and Asr combined and shortened (2+2 rak'ahs) at Dhuhr time",
+        "Face the Qiblah, raise your hands, and make sincere dua until sunset",
+        "Remain within the boundaries of Arafat — do NOT leave early",
+        "Depart to Muzdalifah only AFTER the sun has fully set"
+      ],
+      "tip": "The Prophet ﷺ said: 'Hajj is Arafat.' Missing or leaving this standing early invalidates the entire Hajj.",
+      "dua": "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+      "dua_transliteration": "La ilaha ill-Allah wahdahu la shareeka lah, lahul-mulku wa lahul-hamd, wa huwa 'ala kulli shay'in qadeer",
+      "dua_translation": "There is no god but Allah alone, with no partner. His is the dominion, His is all praise, and He has power over all things."
+    },
+    {
+      "id": 4,
+      "title_ar": "المبيت في مزدلفة",
+      "title_en": "Night at Muzdalifah",
+      "subtitle_en": "Collect Pebbles & Rest",
+      "icon": "🌙",
+      "color_accent": "#D8DCF0",
+      "date_hint": "Night of 9th–10th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of pilgrims resting and sleeping peacefully on the open plain of Muzdalifah under a vast deep midnight blue starry sky with a glowing full moon, white silhouette figures lying and sitting on the ground in rest, scattered small rounded pebbles on beige ground, gold stars and soft moonlight creating gentle warm illumination, spiritual and deeply serene nighttime atmosphere, modern clean Islamic flat art, square format 1:1, no text no watermark",
+      "description": "Spend the night at Muzdalifah under the open sky — pray, collect your pebbles, rest before the Day of Sacrifice.",
+      "steps": [
+        "Arrive at Muzdalifah after sunset from Arafat",
+        "Pray Maghrib (3 rak'ahs) and Isha (2 rak'ahs) combined at Isha time",
+        "Collect 49 pebbles (or 70 to be safe) — pea-sized, not too large",
+        "Rest and sleep — staying overnight is a Sunnah",
+        "Pray Fajr early, make dua facing Qiblah, then depart to Mina before sunrise"
+      ],
+      "tip": "The elderly, weak, women, and children may leave Muzdalifah after midnight — this is a valid Islamic concession.",
+      "dua": "اللَّهُمَّ اجْعَلْهُ حَجًّا مَقْبُولًا وَذَنْبًا مَغْفُورًا وَسَعْيًا مَشْكُورًا",
+      "dua_transliteration": "Allahumma aj'alhu hajjan maqbulan, wa dhanban maghfuran, wa sa'yan mashkuran",
+      "dua_translation": "O Allah, make this an accepted Hajj, a forgiven sin, and a gratefully received effort."
+    },
+    {
+      "id": 5,
+      "title_ar": "رمي الجمرات",
+      "title_en": "Stoning the Jamarat",
+      "subtitle_en": "Rejecting Evil — Following Ibrahim ﷺ",
+      "icon": "🪨",
+      "color_accent": "#EDE0CC",
+      "date_hint": "10th–12th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of the modern Jamarat bridge structure in Mina, silhouette pilgrims on multiple levels throwing small smooth pebbles at tall stone pillars, warm beige and earthy gold color palette with architectural clean lines of the multi-level bridge, soft spiritual light rays from above, collective sense of devotion and purpose, modern clean Islamic flat illustration, square format 1:1, no text no watermark",
+      "description": "Stone the Jamarat pillars in Mina — a symbol of rejecting Shaytan, following Ibrahim's footsteps.",
+      "steps": [
+        "10th Dhul Hijjah: Stone only Jamarat al-Aqabah (largest pillar) with 7 pebbles",
+        "Say 'بِسْمِ اللَّهِ، اللَّهُ أَكْبَرُ' clearly with EACH throw",
+        "11th & 12th: Stone all three pillars — small first, medium, then large — 7 pebbles each",
+        "Throw from the lower levels of the bridge if the upper is crowded",
+        "If leaving on the 12th, depart from Mina before sunset"
+      ],
+      "tip": "Go in the early morning hours to avoid dangerous crowds. Any level of the bridge is valid.",
+      "dua": "بِسْمِ اللَّهِ، اللَّهُ أَكْبَرُ، رَغْمًا لِلشَّيْطَانِ وَحِزْبِهِ",
+      "dua_transliteration": "Bismillah, Allahu Akbar, raghman lish-shaytani wa hizbihi",
+      "dua_translation": "In the name of Allah, Allah is the Greatest — in defiance of Shaytan and his party."
+    },
+    {
+      "id": 6,
+      "title_ar": "الهدي والأضحية",
+      "title_en": "The Sacrifice (Hady)",
+      "subtitle_en": "10th Dhul Hijjah — Eid al-Adha",
+      "icon": "🐑",
+      "color_accent": "#DCF0DC",
+      "date_hint": "10th–12th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration of a gentle symbolic sacrifice scene at dawn, a calm lamb silhouette resting peacefully in soft golden morning light, caring silhouette hands placed gently nearby, lush soft green meadow background with warm sunrise sky, reverent and serene mood, absolutely no blood or graphic content, soft gold green and cream color palette, clean modern Islamic flat art style, square format 1:1, no text no watermark",
+      "description": "Offer your Hady sacrifice — an act of gratitude and worship that completes a key obligation of Hajj.",
+      "steps": [
+        "Purchase an official Hady voucher from an authorized bank or Ministry app",
+        "Sacrifice must be completed on the 10th, 11th, or 12th of Dhul Hijjah",
+        "The meat is distributed to the poor and needy on your behalf",
+        "After sacrifice is confirmed, you may proceed to shave or cut your hair",
+        "Partial Ihram exit begins — most restrictions lift after shaving"
+      ],
+      "tip": "Most pilgrims use official Saudi Government Hady vouchers for safety and reliability. This is the recommended method.",
+      "dua": "اللَّهُمَّ تَقَبَّلْ مِنِّي كَمَا تَقَبَّلْتَ مِنْ إِبْرَاهِيمَ خَلِيلِكَ",
+      "dua_transliteration": "Allahumma taqabbal minni kama taqabbalta min Ibrahima khalilak",
+      "dua_translation": "O Allah, accept from me as You accepted from Ibrahim, Your close friend."
+    },
+    {
+      "id": 7,
+      "title_ar": "الحلق أو التقصير",
+      "title_en": "Shaving or Cutting Hair",
+      "subtitle_en": "Exit the Ihram State",
+      "icon": "✂️",
+      "color_accent": "#F0E8DC",
+      "date_hint": "10th Dhul Hijjah (after stoning & sacrifice)",
+      "image_prompt": "Minimalist Islamic illustration of a pilgrim bowing their head to receive a ritual haircut, caring gentle hands holding simple barber tools, soft warm golden morning light streaming through a nearby window, white Ihram fabric draped softly, a blurred peaceful background hinting at the Grand Mosque silhouette, transformative and humble mood, warm beige gold and white tones, modern clean Islamic flat art, square format 1:1, no faces, no text no watermark",
+      "description": "Shave or cut your hair — a powerful symbol of humility, renewal, and the exit from your Ihram state.",
+      "steps": [
+        "Perform AFTER stoning Jamarat al-Aqabah and completing the sacrifice",
+        "Men: Shave the entire head (preferred) OR cut from all areas of the head equally",
+        "Women: Cut approximately 2.5 cm (one fingertip length) from the ends of the hair",
+        "After shaving, most Ihram restrictions are lifted (except intimacy until Tawaf)",
+        "You may now wear regular clothes, use perfume, and cut your nails"
+      ],
+      "tip": "Shaving is far more virtuous than cutting. The Prophet ﷺ made dua three times for those who shave and only once for those who cut.",
+      "dua": "اللَّهُمَّ اغْفِرْ لِلْمُحَلِّقِينَ، اللَّهُمَّ اغْفِرْ لِلْمُحَلِّقِينَ، اللَّهُمَّ اغْفِرْ لِلْمُحَلِّقِينَ وَالْمُقَصِّرِينَ",
+      "dua_transliteration": "Allahumma ighfir lil-muhalliqeen (x3), Allahumma ighfir lil-muhalliqeena wal-muqassireen",
+      "dua_translation": "O Allah, forgive those who shave their heads (x3). O Allah, forgive those who shave and those who cut their hair."
+    },
+    {
+      "id": 8,
+      "title_ar": "طواف الإفاضة",
+      "title_en": "Tawaf al-Ifadah",
+      "subtitle_en": "The Obligatory Circumambulation",
+      "icon": "🕋",
+      "color_accent": "#F0ECD4",
+      "date_hint": "10th–12th Dhul Hijjah",
+      "image_prompt": "Minimalist Islamic illustration aerial birds-eye view of Masjid al-Haram, the black Ka'bah at the center radiating a soft divine golden glow, perfect flowing concentric circles of white pilgrim silhouettes flowing around it like peaceful ripples on water, pure white and gold color palette on a warm beige background, spiritual and awe-inspiring composition, modern clean Islamic flat art, square format 1:1, no text no watermark",
+      "description": "Perform Tawaf al-Ifadah — circle the Ka'bah 7 times in worship, love, and closeness to Allah.",
+      "steps": [
+        "Enter Masjid al-Haram in a state of Wudu (ritual ablution)",
+        "Begin at the Black Stone (Hajar al-Aswad) — touch, kiss, or simply point to it",
+        "Circle the Ka'bah 7 times counter-clockwise, keeping the Ka'bah to your left",
+        "Pray 2 rak'ahs behind Maqam Ibrahim (or anywhere in the mosque)",
+        "Drink Zamzam water and make sincere dua"
+      ],
+      "tip": "This Tawaf can be done anytime between the 10th–12th of Dhul Hijjah. Choose an early morning time for smaller crowds.",
+      "dua": "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
+      "dua_transliteration": "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar",
+      "dua_translation": "Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire."
+    },
+    {
+      "id": 9,
+      "title_ar": "السعي بين الصفا والمروة",
+      "title_en": "Sa'i — Safa to Marwa",
+      "subtitle_en": "7 Rounds of Devotion",
+      "icon": "🚶",
+      "color_accent": "#DCE8F0",
+      "date_hint": "After Tawaf al-Ifadah",
+      "image_prompt": "Minimalist Islamic illustration of the sacred Mas'a walkway between Safa and Marwa inside Masjid al-Haram, a single determined pilgrim silhouette walking with spiritual resolve under soft towering Islamic arched architecture, warm beige and golden color palette, gentle light filtering through tall ornate windows creating long rays, sense of forward movement hope and devotion, clean modern Islamic flat illustration, square format 1:1, no text no watermark",
+      "description": "Walk 7 times between Safa and Marwa — honoring Hajar's unwavering trust in Allah and completing your Hajj.",
+      "steps": [
+        "Begin at Mount Safa — face the Ka'bah direction and make dua",
+        "Walk to Mount Marwa (this completes Round 1)",
+        "At Marwa, face Ka'bah direction, make dua, then walk back to Safa (Round 2)",
+        "Continue back and forth until you complete 7 rounds (ending at Marwa)",
+        "Congratulations — you have completed all the major Hajj rituals! الحمد لله"
+      ],
+      "tip": "Men should jog lightly between the two green marker lights (a Sunnah of the Prophet ﷺ). Women walk at a normal pace throughout.",
+      "dua": "إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ، أَبْدَأُ بِمَا بَدَأَ اللَّهُ بِهِ",
+      "dua_transliteration": "Inn-as-Safa wal-Marwata min sha'a'irillah. Abda'u bima bada'Allahu bih",
+      "dua_translation": "Indeed, Safa and Marwa are among the symbols of Allah. I begin with what Allah began with."
+    }
+  ]
+}
