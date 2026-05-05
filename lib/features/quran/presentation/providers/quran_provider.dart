@@ -31,9 +31,16 @@ final surahDetailsProvider =
 
 final quranSearchProvider =
     FutureProvider.family<List<Ayah>, String>((ref, query) async {
-  if (query.length < 3) return [];
+  if (query.length < 2) return [];
   final db = ref.watch(appDatabaseProvider);
   return db.quranDao.searchAyahs(query);
+});
+
+final surahSearchProvider =
+    FutureProvider.family<List<Surah>, String>((ref, query) async {
+  if (query.length < 2) return [];
+  final db = ref.watch(appDatabaseProvider);
+  return db.quranDao.searchSurahs(query);
 });
 
 // ─── Font Size Preference ────────────────────────────────────────────────────

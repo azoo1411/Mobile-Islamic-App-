@@ -41,6 +41,12 @@ class QuranDao extends DatabaseAccessor<AppDatabase> with _$QuranDaoMixin {
             ..limit(50))
           .get();
 
+  Future<List<Surah>> searchSurahs(String query) =>
+      (select(surahs)
+            ..where((s) => s.nameArabic.contains(query))
+            ..limit(20))
+          .get();
+
   Future<Tafseer?> getTafseer(
           int surahNumber, int ayahNumber, String source) =>
       (select(tafseers)

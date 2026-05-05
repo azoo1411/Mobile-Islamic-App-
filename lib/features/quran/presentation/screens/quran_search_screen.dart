@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_utils.dart';
+import '../../../../database/app_database.dart';
 import '../providers/quran_provider.dart';
 
 class QuranSearchScreen extends ConsumerStatefulWidget {
@@ -26,9 +27,8 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final resultsAsync = _query.length >= 3
-        ? ref.watch(quranSearchProvider(_query))
-        : null;
+    final surahsAsync = _query.length >= 2 ? ref.watch(surahSearchProvider(_query)) : null;
+    final ayahsAsync = _query.length >= 2 ? ref.watch(quranSearchProvider(_query)) : null;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -44,7 +44,7 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
               color: Colors.white,
             ),
             decoration: const InputDecoration(
-              hintText: 'ابحث في القرآن الكريم...',
+              hintText: 'ابحث عن سورة أو آية...',
               hintStyle: TextStyle(color: Colors.white60),
               border: InputBorder.none,
             ),
@@ -62,53 +62,93 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
               ),
           ],
         ),
-        body: _buildBody(resultsAsync),
+        body: _buildBody(surahsAsync, ayahsAsync),
       ),
     );
   }
 
-  Widget _buildBody(AsyncValue? resultsAsync) {
-    if (_query.length < 3) {
+  Widget _buildBody(AsyncValue? surahsAsync, AsyncValue? ayahsAsync) {
+    if (_query.length < 2) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.search, size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            Text(
-              'أدخل ٣ أحرف على الأقل للبحث',
-              style: AppTypography.bodySmall,
-            ),
+            Text('ابحث عن سورة أو آية', style: AppTypography.bodySmall),
           ],
         ),
       );
     }
 
-    if (resultsAsync == null) return const SizedBox();
+    if (surahsAsync == null && ayahsAsync == null) return const SizedBox();
 
-    return resultsAsync.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (e, _) => Center(child: Text('خطأ: $e')),
-      data: (results) {
-        if (results.isEmpty) {
-          return Center(
-            child: Text('لا توجد نتائج لـ "$_query"',
-                style: AppTypography.body),
-          );
-        }
-        return ListView.separated(
-          itemCount: results.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final ayah = results[index];
+    final surahData = surahsAsync?.valueOrNull as List<dynamic>? ?? [];
+    final ayahData = ayahsAsync?.valueOrNull as List<dynamic>? ?? [];
+    final isLoading = (surahsAsync?.isLoading ?? false) || (ayahsAsync?.isLoading ?? false);
+
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+
+    if (surahData.isEmpty && ayahData.isEmpty) {
+      return Center(
+        child: Text('لا توجد نتائج لـ "$_query"', style: AppTypography.body),
+      );
+    }
+
+    return ListView(
+      children: [
+        if (surahData.isNotEmpty) ...[
+          _sectionHeader('السور', surahData.length),
+          ...surahData.map((s) {
+            final surah = s as Surah;
+            return ListTile(
+              onTap: () => context.push('/quran/surah/${surah.number}'),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    ArabicUtils.toArabicNumerals(surah.number),
+                    style: const TextStyle(
+                      fontFamily: 'AmiriQuran',
+                      fontSize: 14,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              title: Text(surah.nameArabic,
+                  style: AppTypography.heading3, textDirection: TextDirection.rtl),
+              subtitle: Text(
+                '${surah.revelationType == 'meccan' ? 'مكية' : 'مدنية'} · ${ArabicUtils.toArabicNumerals(surah.ayahCount)} آية',
+                style: AppTypography.caption,
+                textDirection: TextDirection.rtl,
+              ),
+              trailing: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+            );
+          }),
+          const Divider(height: 1),
+        ],
+        if (ayahData.isNotEmpty) ...[
+          _sectionHeader('الآيات', ayahData.length),
+          ...ayahData.map((a) {
+            final ayah = a as Ayah;
             return ListTile(
               onTap: () => context.push(
                   '/quran/surah/${ayah.surahNumber}?ayah=${ayah.ayahNumber}'),
               title: Text(
-                _highlightQuery(ayah.textArabic),
+                ayah.textArabic,
                 style: AppTypography.quranAyah.copyWith(fontSize: 16),
                 textDirection: TextDirection.rtl,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               subtitle: Text(
                 'سورة ${ArabicUtils.toArabicNumerals(ayah.surahNumber)} · آية ${ArabicUtils.toArabicNumerals(ayah.ayahNumber)}',
@@ -116,11 +156,24 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
                 textDirection: TextDirection.rtl,
               ),
             );
-          },
-        );
-      },
+          }),
+        ],
+      ],
     );
   }
 
-  String _highlightQuery(String text) => text; // Rich text highlighting can be added
+  Widget _sectionHeader(String title, int count) {
+    return Container(
+      color: AppColors.primary.withOpacity(0.07),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        '$title (${ArabicUtils.toArabicNumerals(count)})',
+        style: AppTypography.caption.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+        ),
+        textDirection: TextDirection.rtl,
+      ),
+    );
+  }
 }

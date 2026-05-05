@@ -29,17 +29,12 @@ class QuickAccessGrid extends StatelessWidget {
         color: Color(0xFFE07A5F),
         route: '/poetry'),
     _QuickItem(
-        label: 'البحث',
-        icon: Icons.search,
-        color: Color(0xFF00B4D8),
-        route: '/quran/search'),
-    _QuickItem(
         label: 'تواصل معنا',
         icon: Icons.mail_outline,
         color: Color(0xFF6B48FF),
         route: '/contact'),
     _QuickItem(
-        label: 'بث مباشر',
+        label: 'المركز المرئي',
         icon: Icons.live_tv,
         color: Color(0xFFE53935),
         route: '/live'),

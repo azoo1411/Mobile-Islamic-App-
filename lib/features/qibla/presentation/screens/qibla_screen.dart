@@ -58,6 +58,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
   double _compassHeading = 0;
   bool _isAligned = false;
   double _alignmentError = 180;
+  bool _isVertical = false;
 
   double _mx = 0, _my = 0, _mz = 0;
   double _ax = 0, _ay = 0, _az = 9.8;
@@ -119,38 +120,52 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
   void _computeHeading() {
     if (!mounted) return;
 
-    // Normalize gravity (accelerometer)
+    // Normalize gravity vector
     final accMag = math.sqrt(_ax * _ax + _ay * _ay + _az * _az);
     if (accMag < 0.1) return;
-    final ax = _ax / accMag;
-    final ay = _ay / accMag;
-    final az = _az / accMag;
+    final gx = _ax / accMag;
+    final gy = _ay / accMag;
+    final gz = _az / accMag;
 
-    // Android SensorManager cross-product formula for tilt-compensated azimuth
-    // H = magnetometer × gravity  →  points East
-    final hx = _my * az - _mz * ay;
-    final hy = _mz * ax - _mx * az;
-    final hz = _mx * ay - _my * ax;
+    // East = normalize(M × G)
+    double ex = _my * gz - _mz * gy;
+    double ey = _mz * gx - _mx * gz;
+    double ez = _mx * gy - _my * gx;
+    final eMag = math.sqrt(ex * ex + ey * ey + ez * ez);
+    if (eMag < 0.1) return;
+    ex /= eMag; ey /= eMag; ez /= eMag;
 
-    final hMag = math.sqrt(hx * hx + hy * hy + hz * hz);
-    if (hMag < 0.1) return;
-    final hxn = hx / hMag;
-    final hyn = hy / hMag;
-    final hzn = hz / hMag;
+    // North = G × East
+    final nx = gy * ez - gz * ey;
+    final ny = gz * ex - gx * ez;
+    final nz = gx * ey - gy * ex;
 
-    // M = gravity × H  →  points North
-    final mmy = az * hxn - ax * hzn;
+    // Project phone top (device +Y = (0,1,0)) onto the horizontal plane.
+    // This is the direction the user naturally aims the phone toward Qibla.
+    // fh = (0,1,0) − gy·G
+    final fhx = -gx * gy;
+    final fhy = 1.0 - gy * gy;
+    final fhz = -gz * gy;
+    final fhMag = math.sqrt(fhx * fhx + fhy * fhy + fhz * fhz);
 
-    // Azimuth: clockwise angle from magnetic North
-    // Mirrors Android SensorManager.getOrientation: atan2(-H_y, M_y)
-    final newHeading = (_toDeg(math.atan2(-hyn, mmy)) + 360) % 360;
+    // When fhMag < 0.15 the phone top is pointing nearly straight up — no
+    // meaningful horizontal direction can be extracted. Show warning.
+    if (fhMag < 0.15) {
+      if (mounted) setState(() => _isVertical = true);
+      return;
+    }
 
-    // Smooth with wrap-around handling (α=0.15 for stable but responsive needle)
+    // Angle from magnetic North to phone-top direction (clockwise from above)
+    final nComp = (fhx * nx + fhy * ny + fhz * nz) / fhMag;
+    final eComp = (fhx * ex + fhy * ey + fhz * ez) / fhMag;
+    final newHeading = (_toDeg(math.atan2(eComp, nComp)) + 360) % 360;
+
     var diff = newHeading - _compassHeading;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
 
     setState(() {
+      _isVertical = false;
       _compassHeading = (_compassHeading + diff * 0.15 + 360) % 360;
       _alignmentError = ((_qiblaAngleDeg - _compassHeading) + 360) % 360;
       if (_alignmentError > 180) _alignmentError = 360 - _alignmentError;
@@ -219,6 +234,33 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
               _buildHeader(),
               const SizedBox(height: 12),
               _buildStatusBadge(),
+              if (_isVertical) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.screen_rotation, color: Colors.orange, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'أمسك الجوال بشكل مائل قليلاً',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontFamily: 'NotoNaskhArabic',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Expanded(child: _buildCompass(needleAngle)),
               _buildInfoPanel(),

@@ -36,6 +36,7 @@ class _LiveScreenState extends State<LiveScreen>
       )
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
+          _injectHideUI(_makkahController);
           if (mounted) setState(() => _makkahLoading = false);
         },
       ))
@@ -49,10 +50,53 @@ class _LiveScreenState extends State<LiveScreen>
       )
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
+          _injectHideUI(_madinahController);
           if (mounted) setState(() => _madinahLoading = false);
         },
       ))
       ..loadRequest(Uri.parse(_madinahUrl));
+  }
+
+  void _injectHideUI(WebViewController controller) {
+    controller.runJavaScript(r"""
+(function() {
+  var style = document.createElement('style');
+  style.innerHTML = `
+    /* Hide site header / nav bar */
+    header, nav, .header, .navbar, .nav-bar,
+    [class*="header"], [class*="Header"],
+    [class*="navbar"], [class*="NavBar"],
+    /* Hide search bars */
+    [class*="search"], [class*="Search"],
+    input[type="search"], input[type="text"],
+    /* Hide channel grid / channel list / carousel */
+    [class*="channel"], [class*="Channel"],
+    [class*="playlist"], [class*="Playlist"],
+    [class*="carousel"], [class*="Carousel"],
+    [class*="grid"], [class*="Grid"],
+    [class*="thumbnail"], [class*="Thumbnail"],
+    [class*="card-list"], [class*="CardList"],
+    [class*="related"], [class*="Related"],
+    [class*="sidebar"], [class*="Sidebar"],
+    [class*="recommendation"], [class*="Recommendation"],
+    /* Hide footer */
+    footer, .footer, [class*="footer"], [class*="Footer"],
+    /* Hide cookie banners / modals */
+    [class*="cookie"], [class*="Cookie"],
+    [class*="modal"], [class*="Modal"],
+    [class*="overlay"]:not([class*="video"]):not([class*="player"]) {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      overflow: hidden !important;
+    }
+    /* Make video player fill screen */
+    body { overflow: hidden !important; background: #000 !important; }
+    video { width: 100% !important; }
+  `;
+  document.head.appendChild(style);
+})();
+""");
   }
 
   @override
