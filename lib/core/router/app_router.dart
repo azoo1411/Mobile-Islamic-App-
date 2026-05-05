@@ -12,6 +12,7 @@ import '../../features/poetry/presentation/screens/poetry_home_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_reader_screen.dart';
 import '../../features/contact/presentation/screens/contact_screen.dart';
 import '../../features/live/presentation/screens/live_screen.dart';
+import '../../features/hajj/presentation/screens/hajj_screen.dart';
 import '../widgets/main_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -63,6 +64,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/live',
         builder: (c, s) => const LiveScreen(),
+      ),
+      GoRoute(
+        path: '/hajj',
+        builder: (c, s) => const HajjScreen(),
       ),
     ],
   );
