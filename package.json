@@ -20,6 +20,7 @@
     "react-native": "0.73.6",
     "react-native-safe-area-context": "4.8.2",
     "react-native-screens": "~3.29.0",
+    "react-native-svg": "14.1.0",
     "@expo-google-fonts/amiri": "^0.2.3"
   },
   "devDependencies": {

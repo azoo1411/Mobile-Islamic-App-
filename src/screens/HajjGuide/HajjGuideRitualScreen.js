@@ -13,20 +13,10 @@ import hajjData from '../../data/hajjGuideData.json';
 import ProgressIndicator from '../../components/ProgressIndicator';
 import ChecklistItem from '../../components/ChecklistItem';
 import AudioButton from '../../components/AudioButton';
+import RitualPlaceholder from '../../components/RitualPlaceholder';
 import { Colors, Spacing, BorderRadius, Shadow } from '../../theme';
 
 const TOTAL = hajjData.hajjGuide.length;
-
-function RitualImagePlaceholder({ ritual }) {
-  return (
-    <View style={[styles.imagePlaceholder, { backgroundColor: ritual.color_accent }]}>
-      <Text style={styles.imagePlaceholderIcon}>{ritual.icon}</Text>
-      <View style={styles.imageDateBadge}>
-        <Text style={styles.imageDateText}>{ritual.date_hint}</Text>
-      </View>
-    </View>
-  );
-}
 
 function SectionCard({ children, style }) {
   return <View style={[styles.sectionCard, style]}>{children}</View>;
@@ -98,7 +88,7 @@ export default function HajjGuideRitualScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Hero image area */}
-        <RitualImagePlaceholder ritual={ritual} />
+        <RitualPlaceholder ritualId={ritual.id} dateHint={ritual.date_hint} />
 
         {/* Title block */}
         <View style={styles.titleBlock}>
@@ -231,31 +221,6 @@ const styles = StyleSheet.create({
   // Scroll
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Spacing.xxl },
-
-  // Hero image area
-  imagePlaceholder: {
-    height: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  imagePlaceholderIcon: {
-    fontSize: 72,
-  },
-  imageDateBadge: {
-    position: 'absolute',
-    bottom: Spacing.md,
-    right: Spacing.md,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  imageDateText: {
-    color: Colors.textOnDark,
-    fontSize: 11,
-    fontWeight: '600',
-  },
 
   // Title
   titleBlock: {
