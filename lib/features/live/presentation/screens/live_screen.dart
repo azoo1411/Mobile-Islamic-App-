@@ -60,41 +60,84 @@ class _LiveScreenState extends State<LiveScreen>
   void _injectHideUI(WebViewController controller) {
     controller.runJavaScript(r"""
 (function() {
+  // ── Inject hide CSS ──────────────────────────────────────────────────────
   var style = document.createElement('style');
+  style.id = '__hide_ui__';
   style.innerHTML = `
-    /* Hide site header / nav bar */
-    header, nav, .header, .navbar, .nav-bar,
-    [class*="header"], [class*="Header"],
-    [class*="navbar"], [class*="NavBar"],
-    /* Hide search bars */
-    [class*="search"], [class*="Search"],
-    input[type="search"], input[type="text"],
-    /* Hide channel grid / channel list / carousel */
-    [class*="channel"], [class*="Channel"],
-    [class*="playlist"], [class*="Playlist"],
-    [class*="carousel"], [class*="Carousel"],
-    [class*="grid"], [class*="Grid"],
-    [class*="thumbnail"], [class*="Thumbnail"],
-    [class*="card-list"], [class*="CardList"],
-    [class*="related"], [class*="Related"],
-    [class*="sidebar"], [class*="Sidebar"],
-    [class*="recommendation"], [class*="Recommendation"],
-    /* Hide footer */
-    footer, .footer, [class*="footer"], [class*="Footer"],
-    /* Hide cookie banners / modals */
-    [class*="cookie"], [class*="Cookie"],
-    [class*="modal"], [class*="Modal"],
-    [class*="overlay"]:not([class*="video"]):not([class*="player"]) {
+    /* Hide everything except the video player wrapper */
+    header, nav, footer,
+    [class*="header" i], [class*="navbar" i], [class*="nav-bar" i],
+    [class*="search" i],
+    [class*="channel" i], [class*="playlist" i],
+    [class*="carousel" i], [class*="slider" i],
+    [class*="program" i], [class*="schedule" i],
+    [class*="grid" i]:not([class*="video" i]):not([class*="player" i]),
+    [class*="thumbnail" i], [class*="thumb" i],
+    [class*="card-list" i], [class*="related" i],
+    [class*="sidebar" i], [class*="recommend" i],
+    [class*="epg" i], [class*="now-playing" i],
+    [class*="footer" i], [class*="cookie" i],
+    [class*="modal" i], [class*="banner" i],
+    [class*="social" i], [class*="share" i],
+    [class*="bottom" i]:not([class*="video" i]):not([class*="player" i]),
+    [class*="strip" i], [class*="row" i]:not([class*="video" i]):not([class*="player" i]) {
       display: none !important;
-      visibility: hidden !important;
       height: 0 !important;
       overflow: hidden !important;
+      pointer-events: none !important;
     }
-    /* Make video player fill screen */
-    body { overflow: hidden !important; background: #000 !important; }
-    video { width: 100% !important; }
+    html, body {
+      overflow: hidden !important;
+      background: #000 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    video {
+      width: 100vw !important;
+      max-width: 100vw !important;
+    }
   `;
-  document.head.appendChild(style);
+  if (!document.getElementById('__hide_ui__')) {
+    document.head.appendChild(style);
+  }
+
+  // ── Aggressively hide channel rows by scanning DOM ────────────────────────
+  function hideChannelRows() {
+    // Target any horizontal scrollable list or row that contains channel images
+    document.querySelectorAll('ul, ol, div').forEach(function(el) {
+      var children = el.children;
+      if (children.length >= 3) {
+        // Check if this looks like a channel row (multiple image children in a row)
+        var hasImages = el.querySelectorAll('img').length >= 2;
+        var isHorizontal = getComputedStyle(el).flexDirection === 'row'
+          || getComputedStyle(el).display === 'flex'
+          || getComputedStyle(el).overflowX === 'auto'
+          || getComputedStyle(el).overflowX === 'scroll';
+        var rect = el.getBoundingClientRect();
+        var isAtBottom = rect.top > window.innerHeight * 0.55;
+
+        if (hasImages && (isHorizontal || isAtBottom)) {
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('height', '0', 'important');
+          // Also hide parent if it becomes empty-looking
+          if (el.parentElement) {
+            var p = el.parentElement;
+            p.style.setProperty('max-height', p.getBoundingClientRect().height - rect.height + 'px', 'important');
+          }
+        }
+      }
+    });
+  }
+
+  // Run immediately and after short delays for dynamic content
+  hideChannelRows();
+  setTimeout(hideChannelRows, 800);
+  setTimeout(hideChannelRows, 2000);
+
+  // Watch for DOM changes and re-hide
+  if (window.__mutObs__) window.__mutObs__.disconnect();
+  window.__mutObs__ = new MutationObserver(function() { hideChannelRows(); });
+  window.__mutObs__.observe(document.body, { childList: true, subtree: true });
 })();
 """);
   }
