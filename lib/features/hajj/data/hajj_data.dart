@@ -20,6 +20,7 @@ class HajjRitual {
   final Color accentColor;
   final IconData icon;
   final String imagePrompt; // AI image generation prompt
+  final String imagePath;
 
   const HajjRitual({
     required this.id,
@@ -35,6 +36,7 @@ class HajjRitual {
     required this.accentColor,
     required this.icon,
     required this.imagePrompt,
+    required this.imagePath,
   });
 }
 
@@ -64,6 +66,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.spa_outlined,
     imagePrompt:
         'Modern Islamic minimal illustration of two white Ihram garments draped gently on a stone ledge, soft golden morning light streaming from the right, desert landscape in background, beige and white tones, spiritual atmosphere, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/ihram.png',
   ),
 
   // ─── 2. منى ────────────────────────────────────────────────────────────────
@@ -91,6 +94,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.nights_stay_outlined,
     imagePrompt:
         'Modern Islamic minimal illustration of white tents in the valley of Mina at twilight, soft golden and green tones, distant mountains, silhouettes of pilgrims resting, spiritual peaceful atmosphere, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/mina.png',
   ),
 
   // ─── 3. عرفات ──────────────────────────────────────────────────────────────
@@ -118,6 +122,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.wb_sunny_outlined,
     imagePrompt:
         'Modern Islamic minimal illustration of the vast plain of Arafat at golden hour, warm amber and gold tones, silhouettes of thousands of pilgrims standing in prayer, soft spiritual light rays from above, Jabal al-Rahmah hill in background, beige and gold palette, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/arafat.png',
   ),
 
   // ─── 4. المزدلفة ───────────────────────────────────────────────────────────
@@ -144,6 +149,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.star_outline,
     imagePrompt:
         'Modern Islamic minimal illustration of a clear starry desert night sky over Muzdalifah, deep navy blue and indigo tones, silhouettes of pilgrims sleeping on the open ground, soft glowing moon, small pebbles in foreground, spiritual calm atmosphere, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/muzdalifah.png',
   ),
 
   // ─── 5. رمي الجمرات ────────────────────────────────────────────────────────
@@ -171,6 +177,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.radio_button_unchecked,
     imagePrompt:
         'Modern Islamic minimal illustration of small smooth pebbles arranged in a circle on sandy ground, warm earthy tones, beige and brown palette, soft dramatic lighting, one pebble mid-air in motion suggesting throwing, spiritual symbolic feel, no people, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/jamarat.png',
   ),
 
   // ─── 6. النحر ──────────────────────────────────────────────────────────────
@@ -195,6 +202,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.volunteer_activism_outlined,
     imagePrompt:
         'Modern Islamic minimal illustration symbolizing sacrifice and gratitude, abstract golden crescent and star motif, warm russet and cream tones, stylized lamb silhouette in soft light, spiritual and reverent mood, no blood or graphic content, elegant and peaceful, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/sacrifice.png',
   ),
 
   // ─── 7. الحلق أو التقصير ───────────────────────────────────────────────────
@@ -219,6 +227,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.content_cut,
     imagePrompt:
         'Modern Islamic minimal illustration of a pair of elegant scissors resting beside white Ihram cloth on a clean surface, soft natural light, sage green and white tones, symbolic sense of transformation and renewal, minimal clean composition, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/haircut.png',
   ),
 
   // ─── 8. طواف الإفاضة ───────────────────────────────────────────────────────
@@ -246,6 +255,7 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.rotate_right,
     imagePrompt:
         'Modern Islamic minimal illustration of the Kaaba from above with white-clad pilgrims circling in a perfect spiral, overhead aerial view, dark green and gold color scheme, soft spiritual light emanating from center, geometric sacred geometry patterns blending with the scene, majestic and serene, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/tawaf.png',
   ),
 
   // ─── 9. السعي ──────────────────────────────────────────────────────────────
@@ -272,5 +282,6 @@ const List<HajjRitual> kHajjRituals = [
     icon: Icons.swap_horiz,
     imagePrompt:
         'Modern Islamic minimal illustration of the Safa and Marwa corridor inside Masjid al-Haram, warm golden and cream tones, silhouettes of pilgrims walking between two elevated platforms, soft arched architecture, spiritual warm light, sense of journey and faith, no faces, no text, square 1:1 format',
+    imagePath: 'assets/images/hajj/sai.png',
   ),
 ];

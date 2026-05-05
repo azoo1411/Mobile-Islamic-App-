@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -32,7 +30,7 @@ class _HajjScreenState extends State<HajjScreen> {
   void _startJourney() => setState(() => _currentStep = 0);
 
   void _goToStep(int index) {
-    if (index < 0 || index > kHajjRituals.length) return;
+    if (index < -1 || index > kHajjRituals.length) return;
     setState(() => _currentStep = index);
   }
 
@@ -646,106 +644,26 @@ class _RitualVisualCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 160,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            ritual.primaryColor,
-            ritual.primaryColor.withOpacity(0.5),
-            Colors.black.withOpacity(0.3),
-          ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.asset(
+        ritual.imagePath,
+        width: double.infinity,
+        height: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: ritual.primaryColor.withOpacity(0.3),
+            border: Border.all(color: ritual.accentColor.withOpacity(0.3)),
+          ),
+          child: Icon(ritual.icon, color: ritual.accentColor, size: 48),
         ),
-        border: Border.all(color: ritual.accentColor.withOpacity(0.3)),
-      ),
-      child: Stack(
-        children: [
-          // Geometric Islamic pattern background
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: CustomPaint(
-                painter: _IslamicPatternPainter(
-                  color: ritual.accentColor.withOpacity(0.07),
-                ),
-              ),
-            ),
-          ),
-          // Content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.25),
-                    border: Border.all(
-                      color: ritual.accentColor.withOpacity(0.6),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Icon(ritual.icon, color: ritual.accentColor, size: 34),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  ritual.titleEnglish,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ritual.accentColor.withOpacity(0.9),
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
-}
-
-class _IslamicPatternPainter extends CustomPainter {
-  final Color color;
-  const _IslamicPatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    const step = 40.0;
-    for (double x = 0; x < size.width + step; x += step) {
-      for (double y = 0; y < size.height + step; y += step) {
-        final center = Offset(x, y);
-        for (int i = 0; i < 8; i++) {
-          final angle = i * math.pi / 4;
-          final outer = Offset(
-            center.dx + 16 * math.cos(angle),
-            center.dy + 16 * math.sin(angle),
-          );
-          final inner = Offset(
-            center.dx + 7 * math.cos(angle + math.pi / 8),
-            center.dy + 7 * math.sin(angle + math.pi / 8),
-          );
-          canvas.drawLine(outer, inner, paint);
-        }
-        canvas.drawCircle(center, 3, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
 }
 
 class _SectionLabel extends StatelessWidget {
