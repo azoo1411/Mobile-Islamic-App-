@@ -1,0 +1,65 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:        # زر يدوي من GitHub
+  push:
+    branches:
+      - claude/add-hajj-guide-tab-55IC0
+      - main
+
+jobs:
+  build-android:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. الكود ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ────────────────────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Java (مطلوب لـ Gradle) ─────────────────────────────────────────
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── 4. تثبيت المكتبات ─────────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm install
+
+      # ── 5. توليد مجلد android بالكود الأصلي ──────────────────────────────
+      - name: Expo prebuild (generate native Android project)
+        run: npx expo prebuild --platform android --clean --no-install
+        env:
+          EXPO_NO_DOTENV: '1'
+
+      # ── 6. بناء الـ APK ───────────────────────────────────────────────────
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # ── 7. رفع الـ APK كـ artifact قابل للتنزيل ──────────────────────────
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: islamic-app-debug-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      # ── 8. اطبع رابط التنزيل في الـ summary ──────────────────────────────
+      - name: Build summary
+        run: |
+          echo "## ✅ APK جاهز للتنزيل" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "اذهب إلى **Actions → هذا الـ Run → Artifacts**" >> $GITHUB_STEP_SUMMARY
+          echo "وحمّل ملف: \`islamic-app-debug-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
