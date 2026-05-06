@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'app.dart';
 import 'services/notification_service.dart';
@@ -24,6 +26,9 @@ void main() async {
   ));
 
   tz.initializeTimeZones();
+  final localTz = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(localTz));
+
   await NotificationService.instance.initialize();
   // Reschedule 7-day adhan using last-known coordinates (works with app closed)
   await NotificationService.instance.scheduleFromSavedLocation();

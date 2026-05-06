@@ -43,6 +43,7 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
+  flutter_timezone: ^1.0.4
   permission_handler: ^11.3.1
 
   # UI & Fonts
