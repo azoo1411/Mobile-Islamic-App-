@@ -4,48 +4,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
-// ── YouTube channel IDs for the two holy mosques ─────────────────────────────
-// قناة القرآن الكريم (Makkah live) — SBA official YouTube channel
-const _makkahChannelId = 'UCbeKNaONTCgQjWF1mGJMfbw';
-// قناة السنة النبوية (Madinah live) — SBA official YouTube channel
-const _madinahChannelId = 'UC4bCMGbRMeVGR82V4DTXPWQ';
-
-const _makkahYouTubeUrl  = 'https://www.youtube.com/channel/$_makkahChannelId/live';
-const _madinahYouTubeUrl = 'https://www.youtube.com/channel/$_madinahChannelId/live';
-
-// ── Builds a self-contained HTML page with a full-screen YouTube embed ────────
-String _buildEmbedHtml(String channelId) => '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%; height: 100%;
-      background: #000;
-      overflow: hidden;
-    }
-    iframe {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: none;
-    }
-  </style>
-</head>
-<body>
-  <iframe
-    src="https://www.youtube.com/embed/live_stream?channel=$channelId&autoplay=1&controls=1&modestbranding=1&rel=0&playsinline=1"
-    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-    allowfullscreen>
-  </iframe>
-</body>
-</html>
-''';
-
-// ─────────────────────────────────────────────────────────────────────────────
+const _makkahUrl  = 'https://aloula.sba.sa/live/quran';
+const _madinahUrl = 'https://aloula.sba.sa/live/sunna';
 
 class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
@@ -60,41 +20,41 @@ class _LiveScreenState extends State<LiveScreen>
   late final WebViewController _makkahController;
   late final WebViewController _madinahController;
 
-  _TabState _makkahState = _TabState.loading;
+  _TabState _makkahState  = _TabState.loading;
   _TabState _madinahState = _TabState.loading;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _makkahController  = _buildController(_makkahChannelId,  (s) => setState(() => _makkahState  = s));
-    _madinahController = _buildController(_madinahChannelId, (s) => setState(() => _madinahState = s));
+    _makkahController  = _buildController(_makkahUrl,  (s) => setState(() => _makkahState  = s));
+    _madinahController = _buildController(_madinahUrl, (s) => setState(() => _madinahState = s));
   }
 
-  WebViewController _buildController(
-    String channelId,
-    void Function(_TabState) onState,
-  ) {
+  WebViewController _buildController(String url, void Function(_TabState) onState) {
     return WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
+      ..setUserAgent(
+        'Mozilla/5.0 (Linux; Android 13; Pixel 7) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/124.0.0.0 Mobile Safari/537.36',
+      )
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => onState(_TabState.loading),
+        onPageStarted:  (_) => onState(_TabState.loading),
         onPageFinished: (_) => onState(_TabState.loaded),
-        onHttpError: (error) {
-          if (error.response?.statusCode != null &&
-              (error.response?.statusCode ?? 0) >= 400) {
-            onState(_TabState.error);
-          }
+        onHttpError: (e) {
+          final code = e.response?.statusCode ?? 0;
+          if (code >= 400) onState(_TabState.error);
         },
         onWebResourceError: (_) => onState(_TabState.error),
       ))
-      ..loadHtmlString(_buildEmbedHtml(channelId));
+      ..loadRequest(Uri.parse(url));
   }
 
-  void _reload(WebViewController ctrl, String channelId, void Function(_TabState) onState) {
+  void _retry(WebViewController ctrl, String url, void Function(_TabState) onState) {
     onState(_TabState.loading);
-    ctrl.loadHtmlString(_buildEmbedHtml(channelId));
+    ctrl.loadRequest(Uri.parse(url));
   }
 
   @override
@@ -147,10 +107,9 @@ class _LiveScreenState extends State<LiveScreen>
               title: 'الحرم المكي',
               subtitle: 'قناة القرآن الكريم',
               accentColor: const Color(0xFF1A6B3A),
-              youTubeUrl: _makkahYouTubeUrl,
-              onRetry: () => _reload(
-                _makkahController,
-                _makkahChannelId,
+              externalUrl: _makkahUrl,
+              onRetry: () => _retry(
+                _makkahController, _makkahUrl,
                 (s) => setState(() => _makkahState = s),
               ),
             ),
@@ -160,10 +119,9 @@ class _LiveScreenState extends State<LiveScreen>
               title: 'المسجد النبوي',
               subtitle: 'قناة السنة النبوية',
               accentColor: const Color(0xFF2C4A8E),
-              youTubeUrl: _madinahYouTubeUrl,
-              onRetry: () => _reload(
-                _madinahController,
-                _madinahChannelId,
+              externalUrl: _madinahUrl,
+              onRetry: () => _retry(
+                _madinahController, _madinahUrl,
                 (s) => setState(() => _madinahState = s),
               ),
             ),
@@ -178,7 +136,7 @@ class _LiveScreenState extends State<LiveScreen>
 
 enum _TabState { loading, loaded, error }
 
-// ── Individual tab widget ─────────────────────────────────────────────────────
+// ── Individual tab ────────────────────────────────────────────────────────────
 
 class _LiveTab extends StatelessWidget {
   final WebViewController controller;
@@ -186,7 +144,7 @@ class _LiveTab extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color accentColor;
-  final String youTubeUrl;
+  final String externalUrl;
   final VoidCallback onRetry;
 
   const _LiveTab({
@@ -195,7 +153,7 @@ class _LiveTab extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.accentColor,
-    required this.youTubeUrl,
+    required this.externalUrl,
     required this.onRetry,
   });
 
@@ -203,16 +161,18 @@ class _LiveTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Live badge banner
+        // Live banner
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: accentColor,
           child: Row(
             children: [
-              _PulseDot(color: state == _TabState.error
-                  ? Colors.orange
-                  : const Color(0xFFFF4444)),
+              _PulseDot(
+                color: state == _TabState.error
+                    ? Colors.orange
+                    : const Color(0xFFFF4444),
+              ),
               const SizedBox(width: 6),
               Text(
                 state == _TabState.error ? 'تعذّر الاتصال' : 'بث مباشر',
@@ -247,11 +207,10 @@ class _LiveTab extends StatelessWidget {
           ),
         ),
 
-        // Content area
+        // Content
         Expanded(
           child: Stack(
             children: [
-              // WebView always rendered (hidden behind overlays when needed)
               WebViewWidget(controller: controller),
 
               // Loading overlay
@@ -307,7 +266,7 @@ class _LiveTab extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.wifi_off_rounded,
+                          const Icon(Icons.wifi_off_rounded,
                               color: Colors.white24, size: 64),
                           const SizedBox(height: 20),
                           Text(title,
@@ -329,7 +288,6 @@ class _LiveTab extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 28),
-                          // Retry button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
@@ -345,7 +303,8 @@ class _LiveTab extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accentColor,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -353,17 +312,17 @@ class _LiveTab extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // Open in YouTube button
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: () => launchUrl(
-                                Uri.parse(youTubeUrl),
+                                Uri.parse(externalUrl),
                                 mode: LaunchMode.externalApplication,
                               ),
-                              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                              icon: const Icon(Icons.open_in_new_rounded,
+                                  size: 16),
                               label: const Text(
-                                'فتح في يوتيوب',
+                                'فتح في المتصفح',
                                 style: TextStyle(
                                   fontFamily: 'NotoNaskhArabic',
                                   fontWeight: FontWeight.w600,
@@ -371,8 +330,10 @@ class _LiveTab extends StatelessWidget {
                               ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white54,
-                                side: const BorderSide(color: Colors.white12),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                side: const BorderSide(
+                                    color: Colors.white12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -392,7 +353,7 @@ class _LiveTab extends StatelessWidget {
   }
 }
 
-// ── Animated pulsing dot for live indicator ───────────────────────────────────
+// ── Animated pulsing dot ──────────────────────────────────────────────────────
 
 class _PulseDot extends StatefulWidget {
   final Color color;
@@ -430,10 +391,7 @@ class _PulseDotState extends State<_PulseDot>
       child: Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }
