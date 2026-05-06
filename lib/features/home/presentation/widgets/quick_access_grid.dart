@@ -39,7 +39,7 @@ class QuickAccessGrid extends StatelessWidget {
         color: Color(0xFFE53935),
         route: '/live'),
     _QuickItem(
-        label: 'مناسك الحج',
+        label: 'الحج والعمرة',
         icon: Icons.mosque,
         color: Color(0xFF8B7035),
         route: '/hajj'),

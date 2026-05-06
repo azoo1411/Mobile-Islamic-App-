@@ -12,7 +12,9 @@ import '../../features/poetry/presentation/screens/poetry_home_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_reader_screen.dart';
 import '../../features/contact/presentation/screens/contact_screen.dart';
 import '../../features/live/presentation/screens/live_screen.dart';
+import '../../features/hajj/presentation/screens/hajj_umrah_hub_screen.dart';
 import '../../features/hajj/presentation/screens/hajj_screen.dart';
+import '../../features/hajj/presentation/screens/umrah_screen.dart';
 import '../widgets/main_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -24,14 +26,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home', builder: (c, s) => const HomeScreen()),
           GoRoute(path: '/quran', builder: (c, s) => const QuranHomeScreen()),
-          GoRoute(
-            path: '/prayer',
-            builder: (c, s) => const PrayerTimesScreen(),
-          ),
-          GoRoute(
-            path: '/poetry',
-            builder: (c, s) => const PoetryHomeScreen(),
-          ),
+          GoRoute(path: '/prayer', builder: (c, s) => const PrayerTimesScreen()),
+          GoRoute(path: '/poetry', builder: (c, s) => const PoetryHomeScreen()),
         ],
       ),
 
@@ -43,32 +39,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           startAyah: int.tryParse(s.uri.queryParameters['ayah'] ?? '') ?? 1,
         ),
       ),
-      GoRoute(
-        path: '/quran/search',
-        builder: (c, s) => const QuranSearchScreen(),
-      ),
-
-      GoRoute(
-        path: '/qibla',
-        builder: (c, s) => const QiblaScreen(),
-      ),
+      GoRoute(path: '/quran/search', builder: (c, s) => const QuranSearchScreen()),
+      GoRoute(path: '/qibla', builder: (c, s) => const QiblaScreen()),
       GoRoute(
         path: '/poetry/:categoryId',
         builder: (c, s) =>
             PoetryReaderScreen(categoryId: s.pathParameters['categoryId']!),
       ),
-      GoRoute(
-        path: '/contact',
-        builder: (c, s) => const ContactScreen(),
-      ),
-      GoRoute(
-        path: '/live',
-        builder: (c, s) => const LiveScreen(),
-      ),
-      GoRoute(
-        path: '/hajj',
-        builder: (c, s) => const HajjScreen(),
-      ),
+      GoRoute(path: '/contact', builder: (c, s) => const ContactScreen()),
+      GoRoute(path: '/live', builder: (c, s) => const LiveScreen()),
+
+      // Hajj & Umrah hub + individual guides
+      GoRoute(path: '/hajj', builder: (c, s) => const HajjUmrahHubScreen()),
+      GoRoute(path: '/hajj/guide', builder: (c, s) => const HajjScreen()),
+      GoRoute(path: '/umrah', builder: (c, s) => const UmrahScreen()),
     ],
   );
 });
