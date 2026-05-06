@@ -92,9 +92,9 @@ class _QuickCardState extends State<_QuickCard> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
-                flex: 7,
+                flex: 8,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
+                  padding: const EdgeInsets.fromLTRB(6, 8, 6, 2),
                   child: Image.asset(
                     item.imagePath,
                     fit: BoxFit.contain,
@@ -102,7 +102,7 @@ class _QuickCardState extends State<_QuickCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+                padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
                 child: Text(
                   item.label,
                   style: const TextStyle(
