@@ -24,4 +24,11 @@ class PoetryDao extends DatabaseAccessor<AppDatabase> with _$PoetryDaoMixin {
 
   Future<int> insertPoem(PoemsCompanion poem) =>
       into(poems).insertOnConflictUpdate(poem);
+
+  Future<int> getPoemCount() =>
+      (selectOnly(poems)..addColumns([poems.id.count()]))
+          .map((r) => r.read(poems.id.count()) ?? 0)
+          .getSingle();
+
+  Future<void> deleteAllPoems() => delete(poems).go();
 }

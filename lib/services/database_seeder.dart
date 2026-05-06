@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../database/app_database.dart';
-import '../database/daos/quran_dao.dart';
-import '../database/daos/hadith_dao.dart';
-import '../database/daos/poetry_dao.dart';
 import 'package:drift/drift.dart';
 
 /// Seeds the local SQLite database from bundled JSON assets.
@@ -19,13 +16,17 @@ class DatabaseSeeder {
   DatabaseSeeder(this._db);
 
   Future<void> seedIfNeeded() async {
-    final count = await _db.quranDao.getAllSurahs();
-    if (count.isNotEmpty) return; // Already seeded
+    final surahs = await _db.quranDao.getAllSurahs();
+    final firstRun = surahs.isEmpty;
 
-    await _seedSurahs();
-    await _seedAyahs();
-    await _seedHadiths();
-    await _seedPoetry();
+    if (firstRun) {
+      await _seedSurahs();
+      await _seedAyahs();
+      await _seedHadiths();
+    }
+
+    // Always sync poetry — re-seeds when JSON has more poems than the DB
+    await _syncPoetry();
   }
 
   Future<void> _seedSurahs() async {
@@ -87,10 +88,16 @@ class DatabaseSeeder {
     }
   }
 
-  Future<void> _seedPoetry() async {
+  Future<void> _syncPoetry() async {
     try {
       final raw = await rootBundle.loadString('assets/data/poetry.json');
       final List data = json.decode(raw);
+      final dbCount = await _db.poetryDao.getPoemCount();
+
+      // Re-seed only when JSON has more poems than what's stored
+      if (dbCount >= data.length) return;
+
+      await _db.poetryDao.deleteAllPoems();
       for (final p in data) {
         await _db.poetryDao.insertPoem(PoemsCompanion(
           categoryId: Value(p['category_id'] as String),
@@ -101,7 +108,7 @@ class DatabaseSeeder {
         ));
       }
     } catch (_) {
-      // Poetry data not bundled yet
+      // Poetry data not available
     }
   }
 }
