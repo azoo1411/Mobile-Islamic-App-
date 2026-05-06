@@ -81,6 +81,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/images/hajj/
+    - assets/images/quick_access/
     - assets/icons/
     - assets/audio/
     - assets/data/

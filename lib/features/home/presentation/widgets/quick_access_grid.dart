@@ -7,38 +7,32 @@ class QuickAccessGrid extends StatelessWidget {
   static const List<_QuickItem> _items = [
     _QuickItem(
       label: 'القرآن الكريم',
-      icon: Icons.menu_book_rounded,
-      color: Color(0xFF2D6A4F),
+      imagePath: 'assets/images/quick_access/quran.png',
       route: '/quran',
     ),
     _QuickItem(
-      label: 'أوقات الصلاة',
-      icon: Icons.access_time_rounded,
-      color: Color(0xFF3A86FF),
+      label: 'مواقيت الصلاة',
+      imagePath: 'assets/images/quick_access/prayer.png',
       route: '/prayer',
     ),
     _QuickItem(
       label: 'اتجاه القبلة',
-      icon: Icons.explore_rounded,
-      color: Color(0xFFD4AF37),
+      imagePath: 'assets/images/quick_access/qibla.png',
       route: '/qibla',
     ),
     _QuickItem(
       label: 'القصائد',
-      icon: Icons.draw_rounded,
-      color: Color(0xFFB07340),
+      imagePath: 'assets/images/quick_access/poetry.png',
       route: '/poetry',
     ),
     _QuickItem(
       label: 'المركز المرئي',
-      icon: Icons.play_circle_rounded,
-      color: Color(0xFFE53935),
+      imagePath: 'assets/images/quick_access/live.png',
       route: '/live',
     ),
     _QuickItem(
       label: 'الحج والعمرة',
-      icon: Icons.mosque_rounded,
-      color: Color(0xFF8B7035),
+      imagePath: 'assets/images/quick_access/hajj.png',
       route: '/hajj',
     ),
   ];
@@ -97,30 +91,25 @@ class _QuickCardState extends State<_QuickCard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon circle
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: item.color.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: item.color.withOpacity(0.2),
-                    width: 1.2,
+              Expanded(
+                flex: 7,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
+                  child: Image.asset(
+                    item.imagePath,
+                    fit: BoxFit.contain,
                   ),
                 ),
-                child: Icon(item.icon, color: item.color, size: 26),
               ),
-              const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
                 child: Text(
                   item.label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'NotoNaskhArabic',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2C2416),
+                    color: Color(0xFF2C2416),
                     height: 1.3,
                   ),
                   textAlign: TextAlign.center,
@@ -137,14 +126,12 @@ class _QuickCardState extends State<_QuickCard> {
 
 class _QuickItem {
   final String label;
-  final IconData icon;
-  final Color color;
+  final String imagePath;
   final String route;
 
   const _QuickItem({
     required this.label,
-    required this.icon,
-    required this.color,
+    required this.imagePath,
     required this.route,
   });
 }
