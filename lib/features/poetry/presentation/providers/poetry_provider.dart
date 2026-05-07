@@ -13,3 +13,12 @@ final poetrySearchProvider =
   final db = ref.watch(appDatabaseProvider);
   return db.poetryDao.searchPoems(query);
 });
+
+final dailyPoemProvider = FutureProvider<Poem?>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  final all = await db.poetryDao.getAllPoems();
+  if (all.isEmpty) return null;
+  final now = DateTime.now();
+  final seed = now.year * 10000 + now.month * 100 + now.day;
+  return all[seed % all.length];
+});

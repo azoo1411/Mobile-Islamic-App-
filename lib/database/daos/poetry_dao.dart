@@ -30,5 +30,7 @@ class PoetryDao extends DatabaseAccessor<AppDatabase> with _$PoetryDaoMixin {
           .map((r) => r.read(poems.id.count()) ?? 0)
           .getSingle();
 
+  Future<List<Poem>> getAllPoems() => select(poems).get();
+
   Future<void> deleteAllPoems() => delete(poems).go();
 }

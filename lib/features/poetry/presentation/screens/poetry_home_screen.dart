@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../providers/poetry_provider.dart';
 
 class _CatStyle {
   final List<Color> gradient;
@@ -65,16 +67,13 @@ const _defaultStyle = _CatStyle(
   bgIcon: Icons.star_rounded,
 );
 
-class PoetryHomeScreen extends StatelessWidget {
+class PoetryHomeScreen extends ConsumerWidget {
   const PoetryHomeScreen({super.key});
 
-  static const String _featuredVerse =
-      'وَمَا نَيلُ المَطالِبِ بِالتَمَنِّي\nوَلكِن تُؤخَذُ الدُّنيا غِلابَا';
-  static const String _featuredPoet = 'المتنبي';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cats = AppConstants.poetryCategories;
+    final dailyPoem = ref.watch(dailyPoemProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -84,7 +83,7 @@ class PoetryHomeScreen extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: _buildHeader()),
-              SliverToBoxAdapter(child: _buildFeaturedCard()),
+              SliverToBoxAdapter(child: _buildFeaturedCard(dailyPoem)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
@@ -166,7 +165,7 @@ class PoetryHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeaturedCard() {
+  Widget _buildFeaturedCard(AsyncValue<dynamic> dailyPoem) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       child: Container(
@@ -209,25 +208,46 @@ class PoetryHomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            Text(
-              '"$_featuredVerse"',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Amiri', fontSize: 20, color: Colors.white,
-                height: 2.2, fontStyle: FontStyle.italic,
+            dailyPoem.when(
+              loading: () => const Center(
+                child: SizedBox(
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    color: AppColors.gold, strokeWidth: 1.5,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(width: 28, height: 1, color: AppColors.gold.withOpacity(0.4)),
-                const SizedBox(width: 8),
-                Text(_featuredPoet,
-                    style: TextStyle(
-                      fontFamily: 'NotoNaskhArabic', fontSize: 13,
-                      color: AppColors.gold.withOpacity(0.85),
-                    )),
-              ],
+              error: (_, __) => const SizedBox.shrink(),
+              data: (poem) {
+                if (poem == null) return const SizedBox.shrink();
+                final lines = poem.poemText.split('\n');
+                final verse = lines.take(2).join('\n');
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '"$verse"',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Amiri', fontSize: 20, color: Colors.white,
+                        height: 2.2, fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Container(width: 28, height: 1, color: AppColors.gold.withOpacity(0.4)),
+                        const SizedBox(width: 8),
+                        Text(poem.poet,
+                            style: TextStyle(
+                              fontFamily: 'NotoNaskhArabic', fontSize: 13,
+                              color: AppColors.gold.withOpacity(0.85),
+                            )),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
