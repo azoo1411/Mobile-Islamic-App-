@@ -327,24 +327,6 @@ class _CategoryCardState extends State<_CategoryCard> {
                   ),
                 ),
 
-                // ── Left-side fade overlay for text readability ───────────
-                Positioned(
-                  right: 0, top: 0, bottom: 0,
-                  width: widget.fullWidth ? 220 : 130,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerRight,
-                        end: Alignment.centerLeft,
-                        colors: [
-                          s.gradient.last.withOpacity(0.0),
-                          s.gradient.last.withOpacity(0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
                 // ── Content ───────────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.all(14),
