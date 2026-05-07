@@ -10,6 +10,8 @@ import '../../features/prayer_times/presentation/screens/prayer_times_screen.dar
 import '../../features/qibla/presentation/screens/qibla_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_home_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_reader_screen.dart';
+import '../../features/adhkar/presentation/screens/adhkar_home_screen.dart';
+import '../../features/adhkar/presentation/screens/adhkar_detail_screen.dart';
 import '../../features/contact/presentation/screens/contact_screen.dart';
 import '../../features/live/presentation/screens/live_screen.dart';
 import '../../features/hajj/presentation/screens/hajj_umrah_hub_screen.dart';
@@ -28,6 +30,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/quran', builder: (c, s) => const QuranHomeScreen()),
           GoRoute(path: '/prayer', builder: (c, s) => const PrayerTimesScreen()),
           GoRoute(path: '/poetry', builder: (c, s) => const PoetryHomeScreen()),
+          GoRoute(path: '/adhkar', builder: (c, s) => const AdhkarHomeScreen()),
         ],
       ),
 
@@ -45,6 +48,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/poetry/:categoryId',
         builder: (c, s) =>
             PoetryReaderScreen(categoryId: s.pathParameters['categoryId']!),
+      ),
+      GoRoute(
+        path: '/adhkar/:categoryId',
+        builder: (c, s) =>
+            AdhkarDetailScreen(categoryId: s.pathParameters['categoryId']!),
       ),
       GoRoute(path: '/contact', builder: (c, s) => const ContactScreen()),
       GoRoute(path: '/live', builder: (c, s) => const LiveScreen()),

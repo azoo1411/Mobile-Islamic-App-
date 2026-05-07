@@ -35,6 +35,11 @@ class QuickAccessGrid extends StatelessWidget {
       imagePath: 'assets/images/quick_access/hajj.png',
       route: '/hajj',
     ),
+    _QuickItem(
+      label: 'الأذكار',
+      imagePath: 'assets/images/quick_access/adhkar.png',
+      route: '/adhkar',
+    ),
   ];
 
   @override
@@ -98,6 +103,11 @@ class _QuickCardState extends State<_QuickCard> {
                   child: Image.asset(
                     item.imagePath,
                     fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.wb_sunny_outlined,
+                      color: Color(0xFFD4AF37),
+                      size: 40,
+                    ),
                   ),
                 ),
               ),
