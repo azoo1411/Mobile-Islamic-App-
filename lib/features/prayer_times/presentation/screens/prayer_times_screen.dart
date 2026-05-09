@@ -24,6 +24,7 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
   String? _lastPrayerKey;
   // Prevent rescheduling more than once per session
   bool _autoScheduled = false;
+  bool _exactAlarmDenied = false;
 
   @override
   void initState() {
@@ -33,6 +34,12 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
         setState(() => _countdown -= const Duration(seconds: 1));
       }
     });
+    _checkExactAlarm();
+  }
+
+  Future<void> _checkExactAlarm() async {
+    final ok = await NotificationService.instance.canScheduleExact();
+    if (mounted && !ok) setState(() => _exactAlarmDenied = true);
   }
 
   @override
@@ -123,6 +130,7 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
+          if (_exactAlarmDenied) _buildExactAlarmBanner(),
           _buildNextPrayerHero(data),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
@@ -138,6 +146,42 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExactAlarmBanner() {
+    return GestureDetector(
+      onTap: () async {
+        await NotificationService.instance.requestExactAlarmPermission();
+        final ok = await NotificationService.instance.canScheduleExact();
+        if (mounted) setState(() => _exactAlarmDenied = !ok);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: const Color(0xFFB45309),
+        child: Row(
+          children: [
+            const Icon(Icons.arrow_back_ios_rounded,
+                color: Colors.white70, size: 14),
+            const Spacer(),
+            const Expanded(
+              child: Text(
+                'اضغط هنا للسماح بالتنبيهات الدقيقة لأوقات الأذان',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.alarm_outlined, color: Colors.white, size: 18),
+          ],
+        ),
       ),
     );
   }

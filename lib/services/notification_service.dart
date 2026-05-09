@@ -201,6 +201,23 @@ class NotificationService {
     );
   }
 
+  /// Returns true if the device can schedule exact alarms.
+  /// On Android 12+ this requires SCHEDULE_EXACT_ALARM to be granted.
+  Future<bool> canScheduleExact() async {
+    final plugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (plugin == null) return true;
+    return await plugin.canScheduleExactNotifications() ?? true;
+  }
+
+  /// Opens the system "Alarms & reminders" settings page so the user
+  /// can grant SCHEDULE_EXACT_ALARM.
+  Future<void> requestExactAlarmPermission() async {
+    final plugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await plugin?.requestExactAlarmsPermission();
+  }
+
   Future<void> cancelAll() => _plugin.cancelAll();
 }
 
