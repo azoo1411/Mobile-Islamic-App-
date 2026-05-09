@@ -55,6 +55,7 @@ class AppConstants {
   static const String prefNotificationsEnabled = 'notifications';
   static const String prefLastReadSurah = 'last_read_surah';
   static const String prefLastReadAyah = 'last_read_ayah';
+  static const String prefLastMushafPage = 'last_mushaf_page';
   static const String prefOnboardingDone = 'onboarding_done';
   static const String prefLastLat = 'last_lat';
   static const String prefLastLon = 'last_lon';

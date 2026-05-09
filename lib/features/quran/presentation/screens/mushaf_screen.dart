@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -48,6 +49,41 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
     super.initState();
     _currentPage = widget.initialPage.clamp(1, 604);
     _pageController = PageController(initialPage: _currentPage - 1);
+    // Auto-resume only when opened from the default entry point
+    if (widget.initialPage == 1) _loadLastPage();
+  }
+
+  Future<void> _loadLastPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(AppConstants.prefLastMushafPage) ?? 1;
+    if (saved > 1 && mounted) {
+      _pageController.jumpToPage(saved - 1);
+      setState(() => _currentPage = saved);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'استُؤنفت القراءة من صفحة ${ArabicUtils.toArabicNumerals(saved)}',
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(fontFamily: 'NotoNaskhArabic'),
+          ),
+          backgroundColor: const Color(0xFF1B4D3E),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'البداية',
+            textColor: const Color(0xFFD4AF37),
+            onPressed: () {
+              _pageController.jumpToPage(0);
+              setState(() => _currentPage = 1);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _savePage(int page) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt(AppConstants.prefLastMushafPage, page);
   }
 
   @override
@@ -118,7 +154,10 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
                 controller: _pageController,
                 reverse: true, // RTL: swipe right = prev page
                 itemCount: 604,
-                onPageChanged: (i) => setState(() => _currentPage = i + 1),
+                onPageChanged: (i) {
+                setState(() => _currentPage = i + 1);
+                _savePage(i + 1);
+              },
                 itemBuilder: (_, i) => _MushafPageImage(pageNumber: i + 1),
               ),
 
