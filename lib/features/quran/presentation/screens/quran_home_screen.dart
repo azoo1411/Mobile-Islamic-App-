@@ -6,6 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_utils.dart';
 import '../providers/quran_provider.dart';
+import '../providers/bookmarks_provider.dart';
+import '../../../../database/app_database.dart';
+import 'mushaf_screen.dart';
 
 class QuranHomeScreen extends ConsumerStatefulWidget {
   const QuranHomeScreen({super.key});
@@ -178,17 +181,111 @@ class _JuzListTab extends StatelessWidget {
   }
 }
 
-class _BookmarksTab extends StatelessWidget {
+class _BookmarksTab extends ConsumerWidget {
   const _BookmarksTab();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'لا توجد إشارات مرجعية بعد',
-        style: AppTypography.body,
-        textDirection: TextDirection.rtl,
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookmarks = ref.watch(mushafBookmarksProvider);
+
+    return bookmarks.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (list) {
+        if (list.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bookmark_border, size: 48, color: AppColors.textSecondary),
+                SizedBox(height: 12),
+                Text(
+                  'لا توجد إشارات مرجعية',
+                  style: AppTypography.body,
+                  textDirection: TextDirection.rtl,
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'اضغط على 🔖 أثناء قراءة المصحف لحفظ الصفحة',
+                  style: AppTypography.caption,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+          itemBuilder: (context, i) {
+            final bm = list[i];
+            final page = int.tryParse(bm.referenceId) ?? 1;
+            final info = ref.watch(mushafPageInfoProvider(page));
+
+            return Dismissible(
+              key: ValueKey(bm.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.red.shade700,
+                child: const Icon(Icons.delete_outline, color: Colors.white),
+              ),
+              onDismissed: (_) => ref
+                  .read(appDatabaseProvider)
+                  .bookmarksDao
+                  .removeBookmark('mushaf_page', bm.referenceId),
+              child: ListTile(
+                onTap: () => context.push('/quran/mushaf?page=$page'),
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      ArabicUtils.toArabicNumerals(page),
+                      style: const TextStyle(
+                        fontFamily: 'AmiriQuran',
+                        fontSize: 15,
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                title: info.when(
+                  data: (d) => Text(
+                    d?.surahName ?? 'صفحة $page',
+                    style: AppTypography.heading3,
+                    textDirection: TextDirection.rtl,
+                  ),
+                  loading: () => Text('صفحة ${ArabicUtils.toArabicNumerals(page)}',
+                      style: AppTypography.heading3, textDirection: TextDirection.rtl),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                subtitle: info.when(
+                  data: (d) => d == null
+                      ? null
+                      : Text(
+                          'الجزء ${ArabicUtils.toArabicNumerals(d.juzNumber)}',
+                          style: AppTypography.caption,
+                          textDirection: TextDirection.rtl,
+                        ),
+                  loading: () => null,
+                  error: (_, __) => null,
+                ),
+                trailing: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

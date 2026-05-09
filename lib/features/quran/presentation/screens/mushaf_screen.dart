@@ -8,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/arabic_utils.dart';
 import '../../../../database/app_database.dart';
+import '../providers/bookmarks_provider.dart';
 
 // ─── Page metadata provider ───────────────────────────────────────────────────
 
@@ -169,8 +170,10 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
                   ignoring: !_showOverlay,
                   child: _TopOverlay(
                     info: info,
+                    currentPage: _currentPage,
                     onBack: () => Navigator.pop(context),
                     onJump: _jumpToPage,
+                    onBookmark: () => toggleMushafBookmark(ref, _currentPage),
                   ),
                 ),
               ),
@@ -191,15 +194,24 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
 
 // ─── Top overlay ──────────────────────────────────────────────────────────────
 
-class _TopOverlay extends StatelessWidget {
+class _TopOverlay extends ConsumerWidget {
   final AsyncValue<MushafPageInfo?> info;
+  final int currentPage;
   final VoidCallback onBack;
   final VoidCallback onJump;
-  const _TopOverlay(
-      {required this.info, required this.onBack, required this.onJump});
+  final VoidCallback onBookmark;
+  const _TopOverlay({
+    required this.info,
+    required this.currentPage,
+    required this.onBack,
+    required this.onJump,
+    required this.onBookmark,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isBookmarked = ref.watch(isPageBookmarkedProvider(currentPage));
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -248,6 +260,14 @@ class _TopOverlay extends StatelessWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+              ),
+              IconButton(
+                icon: Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: isBookmarked ? const Color(0xFFD4AF37) : Colors.white,
+                  size: 22,
+                ),
+                onPressed: onBookmark,
               ),
               IconButton(
                 icon: const Icon(Icons.find_in_page_outlined,

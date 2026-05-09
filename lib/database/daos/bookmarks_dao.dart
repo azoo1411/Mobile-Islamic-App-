@@ -32,6 +32,12 @@ class BookmarksDao extends DatabaseAccessor<AppDatabase>
                 b.referenceId.equals(referenceId)))
           .go();
 
+  Stream<List<Bookmark>> watchByType(String type) =>
+      (select(bookmarks)
+            ..where((b) => b.bookmarkType.equals(type))
+            ..orderBy([(b) => OrderingTerm.desc(b.savedAt)]))
+          .watch();
+
   Future<void> saveProgress(String type, String referenceId) =>
       into(lastRead).insertOnConflictUpdate(
         LastReadCompanion(
