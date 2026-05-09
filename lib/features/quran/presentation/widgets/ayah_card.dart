@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_utils.dart';
 import '../../../../database/app_database.dart';
 import '../providers/audio_provider.dart';
+import 'tafsir_sheet.dart';
 
 class AyahCard extends ConsumerWidget {
   final Ayah ayah;
@@ -19,7 +20,14 @@ class AyahCard extends ConsumerWidget {
     final isPlaying = playingAyah?.surah == ayah.surahNumber &&
         playingAyah?.ayah == ayah.ayahNumber;
 
-    return Container(
+    return GestureDetector(
+      onLongPress: () => showTafsirSheet(
+        context,
+        surahNumber: ayah.surahNumber,
+        ayahNumber: ayah.ayahNumber,
+        ayahText: ayah.textUthmani,
+      ),
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isPlaying
@@ -49,6 +57,7 @@ class AyahCard extends ConsumerWidget {
           ],
         ),
       ),
+      ), // GestureDetector
     );
   }
 
