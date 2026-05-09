@@ -39,6 +39,11 @@ class _QuranHomeScreenState extends ConsumerState<QuranHomeScreen>
           title: const Text('القرآن الكريم'),
           actions: [
             IconButton(
+              icon: const Icon(Icons.menu_book_outlined),
+              tooltip: 'قراءة المصحف',
+              onPressed: () => context.push('/quran/mushaf'),
+            ),
+            IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => context.push('/quran/search'),
             ),

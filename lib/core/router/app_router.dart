@@ -6,6 +6,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/quran/presentation/screens/quran_home_screen.dart';
 import '../../features/quran/presentation/screens/surah_screen.dart';
 import '../../features/quran/presentation/screens/quran_search_screen.dart';
+import '../../features/quran/presentation/screens/mushaf_screen.dart';
 import '../../features/prayer_times/presentation/screens/prayer_times_screen.dart';
 import '../../features/qibla/presentation/screens/qibla_screen.dart';
 import '../../features/poetry/presentation/screens/poetry_home_screen.dart';
@@ -43,6 +44,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/quran/search', builder: (c, s) => const QuranSearchScreen()),
+      GoRoute(
+        path: '/quran/mushaf',
+        builder: (c, s) => MushafScreen(
+          initialPage: int.tryParse(s.uri.queryParameters['page'] ?? '') ?? 1,
+        ),
+      ),
       GoRoute(path: '/qibla', builder: (c, s) => const QiblaScreen()),
       GoRoute(
         path: '/poetry/:categoryId',
