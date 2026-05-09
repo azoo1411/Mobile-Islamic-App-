@@ -16,8 +16,8 @@ class AyahCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playingAyah = ref.watch(currentlyPlayingAyahProvider);
-    final isPlaying = playingAyah?.surahNumber == ayah.surahNumber &&
-        playingAyah?.ayahNumber == ayah.ayahNumber;
+    final isPlaying = playingAyah?.surah == ayah.surahNumber &&
+        playingAyah?.ayah == ayah.ayahNumber;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

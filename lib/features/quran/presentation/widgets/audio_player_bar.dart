@@ -102,7 +102,7 @@ class AudioPlayerBar extends ConsumerWidget {
       width: 40,
       height: 40,
       child: CircularProgressIndicator(
-        value: state.progress,
+        value: state.isLoading ? null : state.progress,
         backgroundColor: AppColors.divider,
         color: AppColors.primary,
         strokeWidth: 3,

@@ -4,19 +4,17 @@ class AppConstants {
   static const int totalSurahs = 114;
   static const int totalAyahs = 6236;
 
-  // Audio base URL — everyayah.com provides free Quran audio
-  static const String audioBaseUrl = 'https://everyayah.com/data';
+  // Primary audio CDN — verses.quran.com (Minshawi default)
+  static const String audioBaseUrl = 'https://verses.quran.com';
 
-  // Default reciter (Hafs from Aasim — most common)
-  static const String defaultReciter = 'Alafasy_128kbps';
+  // Default reciter
+  static const String defaultReciter = 'minshawi';
 
   static const List<Map<String, String>> reciters = [
-    {'id': 'Alafasy_128kbps', 'name': 'مشاري راشد العفاسي'},
-    {'id': 'Husary_128kbps', 'name': 'محمود خليل الحصري'},
-    {'id': 'Minshawi_128kbps', 'name': 'محمد صديق المنشاوي'},
-    {'id': 'Abu_Bakr_Ash-Shaatree_128kbps', 'name': 'أبو بكر الشاطري'},
-    {'id': 'AbdurRahmaanAs-Sudais_192kbps', 'name': 'عبد الرحمن السديس'},
-    {'id': 'Ahmed_ibn_Ali_al-Ajamy_128kbps_ketabook', 'name': 'أحمد العجمي'},
+    {'id': 'minshawi',  'name': 'محمد صديق المنشاوي', 'path': 'AlMinshawi/mp3'},
+    {'id': 'alafasy',   'name': 'مشاري راشد العفاسي',  'path': 'Alafasy/mp3'},
+    {'id': 'husary',    'name': 'محمود خليل الحصري',    'path': 'Husary/mp3'},
+    {'id': 'sudais',    'name': 'عبد الرحمن السديس',    'path': 'Abdurrahmaan_As-Sudais/mp3'},
   ];
 
   static const List<Map<String, String>> hadithBooks = [

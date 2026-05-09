@@ -5,32 +5,38 @@ import '../core/constants/app_constants.dart';
 class QuranAudioService {
   final AudioPlayer _player = AudioPlayer();
 
-  // everyayah.com URL format: /reciter/surah_ayah.mp3
-  // e.g. Alafasy_128kbps/002255.mp3 for Al-Baqarah 255
-  String _buildAudioUrl(int surah, int ayah, String reciterId) {
-    final surahStr = surah.toString().padLeft(3, '0');
-    final ayahStr = ayah.toString().padLeft(3, '0');
-    return '${AppConstants.audioBaseUrl}/$reciterId/$surahStr$ayahStr.mp3';
+  String _buildUrl(int surah, int ayah, String reciterId) {
+    final path = AppConstants.reciters
+        .firstWhere(
+          (r) => r['id'] == reciterId,
+          orElse: () => AppConstants.reciters.first,
+        )['path']!;
+    final file =
+        '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
+    return '${AppConstants.audioBaseUrl}/$path/$file';
   }
 
   Future<void> playAyah({
     required int surahNumber,
     required int ayahNumber,
     String reciterId = AppConstants.defaultReciter,
+    void Function()? onComplete,
   }) async {
-    final url = _buildAudioUrl(surahNumber, ayahNumber, reciterId);
+    final url = _buildUrl(surahNumber, ayahNumber, reciterId);
     try {
+      await _player.stop();
       await _player.setUrl(url);
+      _player.playerStateStream
+          .where((s) => s.processingState == ProcessingState.completed)
+          .take(1)
+          .listen((_) => onComplete?.call());
       await _player.play();
-    } catch (e) {
-      // Silently fail — no network or invalid URL
-    }
+    } catch (_) {}
   }
 
   Future<void> pause() => _player.pause();
   Future<void> resume() => _player.play();
   Future<void> stop() => _player.stop();
-  Future<void> seek(Duration position) => _player.seek(position);
 
   Stream<Duration?> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
