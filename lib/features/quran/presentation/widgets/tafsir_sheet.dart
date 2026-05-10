@@ -44,18 +44,21 @@ class _TafsirSheet extends ConsumerWidget {
       maxChildSize: 0.92,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFFFBF9F5),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: Color(0xFF0F1629),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(color: Color(0x55D4AF37), width: 1),
+          ),
         ),
         child: Column(
           children: [
             // Handle
             Container(
               margin: const EdgeInsets.only(top: 10),
-              width: 40,
-              height: 4,
+              width: 36,
+              height: 3,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: const Color(0x55D4AF37),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -72,22 +75,32 @@ class _TafsirSheet extends ConsumerWidget {
                       fontFamily: 'NotoNaskhArabic',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1B4D3E),
+                      color: Color(0xFFD4AF37),
                     ),
                   ),
-                  const Text(
-                    'تفسير السعدي',
-                    style: TextStyle(
-                      fontFamily: 'NotoNaskhArabic',
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: const Color(0x22D4AF37),
+                      border: Border.all(
+                          color: const Color(0x55D4AF37), width: 1),
+                    ),
+                    child: const Text(
+                      'تفسير السعدي',
+                      style: TextStyle(
+                        fontFamily: 'NotoNaskhArabic',
+                        fontSize: 11,
+                        color: Color(0xFFD4AF37),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const Divider(height: 1),
+            const Divider(height: 1, color: Color(0x22FFFFFF)),
 
             // Content
             Expanded(
@@ -148,8 +161,8 @@ class _TafsirSheet extends ConsumerWidget {
                             style: const TextStyle(
                               fontFamily: 'NotoNaskhArabic',
                               fontSize: 16,
-                              height: 1.9,
-                              color: Color(0xFF2C2416),
+                              height: 2.0,
+                              color: Color(0xCCFFFFFF),
                             ),
                           ),
                   ),

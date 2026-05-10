@@ -40,12 +40,16 @@ class SurahScreen extends ConsumerStatefulWidget {
   ConsumerState<SurahScreen> createState() => _SurahScreenState();
 }
 
+enum _ReadingTheme { dark, sepia }
+
 class _SurahScreenState extends ConsumerState<SurahScreen> {
   final _scrollController = ScrollController();
   double _fontSize = 22.0;
   bool _headerVisible = true;
-  int? _selectedAyah; // ayah number with open inline actions
-  bool _showTafsir = false;
+  int? _selectedAyah;
+  _ReadingTheme _theme = _ReadingTheme.dark;
+  // One GlobalKey per ayah — used by auto-scroll
+  final Map<int, GlobalKey> _ayahKeys = {};
 
   @override
   void initState() {
@@ -69,44 +73,67 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     setState(() => _selectedAyah = _selectedAyah == number ? null : number);
   }
 
+  void _scrollToAyah(int ayahNumber) {
+    final key = _ayahKeys[ayahNumber];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 550),
+        curve: Curves.easeInOut,
+        alignment: 0.25,
+      );
+    }
+  }
+
+  GlobalKey _keyFor(int ayahNumber) =>
+      _ayahKeys.putIfAbsent(ayahNumber, () => GlobalKey());
+
   @override
   Widget build(BuildContext context) {
     final surahAsync = ref.watch(surahDetailsProvider(widget.surahNumber));
 
+    // Auto-scroll when playing ayah changes
+    ref.listen<({int surah, int ayah})?>(currentlyPlayingAyahProvider,
+        (prev, next) {
+      if (next != null && next.surah == widget.surahNumber &&
+          next.ayah != prev?.ayah) {
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _scrollToAyah(next.ayah));
+      }
+    });
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: _navy,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        color: _theme == _ReadingTheme.sepia
+            ? const Color(0xFF1E160A)
+            : _navy,
+        child: Scaffold(
+        backgroundColor: Colors.transparent,
         body: surahAsync.when(
           loading: () => const Center(
               child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
-          error: (e, _) => Center(
-              child: Text('$e',
-                  style: const TextStyle(color: _white70))),
+          error: (e, _) =>
+              Center(child: Text('$e', style: const TextStyle(color: _white70))),
           data: (data) => Stack(
             children: [
               // ── Main scroll area ───────────────────────────
               CustomScrollView(
                 controller: _scrollController,
                 slivers: [
-                  // Collapsible header
                   SliverToBoxAdapter(
                     child: _SurahHeader(
-                      surah: data.surah,
-                      visible: _headerVisible,
-                    ),
+                        surah: data.surah, visible: _headerVisible),
                   ),
-
-                  // Basmala
                   if (data.surah.number != 1 && data.surah.number != 9)
                     const SliverToBoxAdapter(child: _Basmala()),
-
-                  // Ayah list
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (_, i) {
                         final ayah = data.ayahs[i];
                         return _AyahTile(
+                          key: _keyFor(ayah.ayahNumber),
                           ayah: ayah,
                           fontSize: _fontSize,
                           isSelected: _selectedAyah == ayah.ayahNumber,
@@ -116,21 +143,50 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                       childCount: data.ayahs.length,
                     ),
                   ),
-
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
 
-              // ── Floating header bar (fades in on scroll) ──
+              // ── Reading progress bar (top edge) ───────────
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: AnimatedBuilder(
+                  animation: _scrollController,
+                  builder: (_, __) {
+                    final progress = _scrollController.hasClients &&
+                            _scrollController.position.maxScrollExtent > 0
+                        ? (_scrollController.offset /
+                                _scrollController.position.maxScrollExtent)
+                            .clamp(0.0, 1.0)
+                        : 0.0;
+                    return LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 2,
+                      backgroundColor: Colors.transparent,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(_gold),
+                    );
+                  },
+                ),
+              ),
+
+              // ── Floating bar ───────────────────────────────
               _FloatingBar(
                 surah: data.surah,
                 visible: !_headerVisible,
                 fontSize: _fontSize,
+                theme: _theme,
                 onBack: () => Navigator.pop(context),
                 onFontIncrease: () =>
                     setState(() => _fontSize = (_fontSize + 1).clamp(18, 34)),
                 onFontDecrease: () =>
                     setState(() => _fontSize = (_fontSize - 1).clamp(18, 34)),
+                onThemeToggle: () => setState(() => _theme =
+                    _theme == _ReadingTheme.dark
+                        ? _ReadingTheme.sepia
+                        : _ReadingTheme.dark),
               ),
 
               // ── Mini audio player ──────────────────────────
@@ -144,6 +200,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
           ),
         ),
       ),
+      ), // AnimatedContainer
     );
   }
 }
@@ -305,6 +362,7 @@ class _AyahTile extends ConsumerWidget {
   final VoidCallback onTap;
 
   const _AyahTile({
+    super.key,
     required this.ayah,
     required this.fontSize,
     required this.isSelected,
@@ -552,17 +610,21 @@ class _FloatingBar extends StatelessWidget {
   final Surah surah;
   final bool visible;
   final double fontSize;
+  final _ReadingTheme theme;
   final VoidCallback onBack;
   final VoidCallback onFontIncrease;
   final VoidCallback onFontDecrease;
+  final VoidCallback onThemeToggle;
 
   const _FloatingBar({
     required this.surah,
     required this.visible,
     required this.fontSize,
+    required this.theme,
     required this.onBack,
     required this.onFontIncrease,
     required this.onFontDecrease,
+    required this.onThemeToggle,
   });
 
   @override
@@ -629,8 +691,22 @@ class _FloatingBar extends StatelessWidget {
                   onTap: onFontIncrease,
                   child: const Padding(
                     padding: EdgeInsets.all(6),
-                    child:
-                        Icon(Icons.text_increase, color: _white70, size: 18),
+                    child: Icon(Icons.text_increase, color: _white70, size: 18),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                // Theme toggle
+                GestureDetector(
+                  onTap: onThemeToggle,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      theme == _ReadingTheme.dark
+                          ? Icons.wb_incandescent_outlined
+                          : Icons.nightlight_round,
+                      color: theme == _ReadingTheme.sepia ? _gold : _white70,
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
