@@ -50,9 +50,15 @@ class AyahCard extends ConsumerWidget {
               style: AppTypography.quranAyah.copyWith(
                 fontSize: fontSize,
                 color: isPlaying ? AppColors.primary : AppColors.textQuran,
+                fontFeatures: const [
+                  FontFeature.enable('calt'),
+                  FontFeature.enable('liga'),
+                  FontFeature.enable('clig'),
+                ],
               ),
               textDirection: TextDirection.rtl,
               textAlign: TextAlign.justify,
+              locale: const Locale('ar'),
             ),
           ],
         ),

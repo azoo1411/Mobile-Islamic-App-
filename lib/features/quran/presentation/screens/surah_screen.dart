@@ -252,7 +252,15 @@ class _TafsirAyahTileState extends ConsumerState<_TafsirAyahTile> {
                     ayah.textUthmani,
                     textDirection: TextDirection.rtl,
                     textAlign: TextAlign.justify,
-                    style: AppTypography.quranAyah.copyWith(fontSize: 18),
+                    locale: const Locale('ar'),
+                    style: AppTypography.quranAyah.copyWith(
+                      fontSize: 18,
+                      fontFeatures: const [
+                        FontFeature.enable('calt'),
+                        FontFeature.enable('liga'),
+                        FontFeature.enable('clig'),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

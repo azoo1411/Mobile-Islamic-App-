@@ -108,11 +108,17 @@ class _TafsirSheet extends ConsumerWidget {
                       ayahText,
                       textDirection: TextDirection.rtl,
                       textAlign: TextAlign.justify,
+                      locale: const Locale('ar'),
                       style: const TextStyle(
                         fontFamily: 'AmiriQuran',
                         fontSize: 20,
-                        height: 2.0,
+                        height: 2.2,
                         color: Color(0xFF1B4D3E),
+                        fontFeatures: [
+                          FontFeature.enable('calt'),
+                          FontFeature.enable('liga'),
+                          FontFeature.enable('clig'),
+                        ],
                       ),
                     ),
                   ),

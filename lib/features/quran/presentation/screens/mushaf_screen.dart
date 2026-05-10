@@ -470,22 +470,44 @@ class _BottomOverlay extends StatelessWidget {
   }
 }
 
-// ─── Single page image ────────────────────────────────────────────────────────
+// ─── Single page image (multi-CDN with automatic fallback) ───────────────────
 
-class _MushafPageImage extends StatelessWidget {
+class _MushafPageImage extends StatefulWidget {
   final int pageNumber;
   final MushafMode mode;
   const _MushafPageImage({required this.pageNumber, required this.mode});
 
-  String get _url {
-    final p = pageNumber.toString().padLeft(3, '0');
-    return '${AppConstants.mushafImageBaseUrl}/page-$p.jpg';
+  @override
+  State<_MushafPageImage> createState() => _MushafPageImageState();
+}
+
+class _MushafPageImageState extends State<_MushafPageImage> {
+  int _cdnIndex = 0;
+
+  List<String> get _urls {
+    final p = widget.pageNumber;
+    final padded = p.toString().padLeft(3, '0');
+    return [
+      '${AppConstants.mushafCdnUrls[0]}/$p.jpg',
+      '${AppConstants.mushafCdnUrls[1]}/page-$padded.jpg',
+    ];
+  }
+
+  void _tryNext() {
+    if (_cdnIndex < _urls.length - 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _cdnIndex++);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final mode = widget.mode;
+
     Widget image = CachedNetworkImage(
-      imageUrl: _url,
+      key: ValueKey('${widget.pageNumber}_$_cdnIndex'),
+      imageUrl: _urls[_cdnIndex],
       fit: BoxFit.contain,
       placeholder: (_, __) => Shimmer.fromColors(
         baseColor: mode == MushafMode.dark
@@ -501,28 +523,46 @@ class _MushafPageImage extends StatelessWidget {
           ),
         ),
       ),
-      errorWidget: (_, __, ___) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.menu_book_outlined,
-                size: 64,
-                color: mode == MushafMode.dark
-                    ? Colors.white38
-                    : const Color(0xFFD4AF37)),
-            const SizedBox(height: 12),
-            Text(
-              'تعذّر تحميل الصفحة',
-              style: TextStyle(
-                fontFamily: 'NotoNaskhArabic',
-                color: mode == MushafMode.dark
-                    ? Colors.white38
-                    : const Color(0xFF888888),
+      errorWidget: (_, __, ___) {
+        // Try next CDN silently
+        if (_cdnIndex < _urls.length - 1) {
+          _tryNext();
+          // Show shimmer while switching CDN
+          return Shimmer.fromColors(
+            baseColor: mode == MushafMode.dark
+                ? const Color(0xFF2A2A2F)
+                : const Color(0xFFEDE8DC),
+            highlightColor: mode == MushafMode.dark
+                ? const Color(0xFF3A3A40)
+                : const Color(0xFFF8F5EE),
+            child: Container(color: mode.background),
+          );
+        }
+        // All CDNs failed
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.menu_book_outlined,
+                  size: 64,
+                  color: mode == MushafMode.dark
+                      ? Colors.white38
+                      : const Color(0xFFD4AF37)),
+              const SizedBox(height: 12),
+              Text(
+                'تعذّر تحميل الصفحة\nتحقق من الاتصال بالإنترنت',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  color: mode == MushafMode.dark
+                      ? Colors.white38
+                      : const Color(0xFF888888),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
 
     if (mode.filter != null) {

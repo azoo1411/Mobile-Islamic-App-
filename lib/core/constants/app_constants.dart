@@ -4,10 +4,13 @@ class AppConstants {
   static const int totalSurahs = 114;
   static const int totalAyahs = 6236;
 
-  // Mushaf page images (604 pages, Hafs 'an 'Asim — King Fahd Complex style)
-  static const String mushafImageBaseUrl =
-      'https://www.searchtruth.com/quran/images2/large';
-  // URL format: $mushafImageBaseUrl/page-{001}.jpg
+  // Mushaf page image CDNs — tried in order until one succeeds
+  static const List<String> mushafCdnUrls = [
+    'https://static.qurancdn.com/images/mushaf/hafs/compressed',  // {page}.jpg  (no padding)
+    'https://www.searchtruth.com/quran/images2/large',             // page-{001}.jpg (padded)
+  ];
+  // keep for legacy references
+  static String get mushafImageBaseUrl => mushafCdnUrls.first;
 
   // Primary audio CDN — verses.quran.com (Minshawi default)
   static const String audioBaseUrl = 'https://verses.quran.com';
