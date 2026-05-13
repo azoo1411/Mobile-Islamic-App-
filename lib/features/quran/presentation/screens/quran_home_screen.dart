@@ -11,30 +11,25 @@ import '../providers/bookmarks_provider.dart';
 import '../providers/quran_provider.dart';
 import 'mushaf_screen.dart';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens ─────────────────────────────────────────────────────────────
+const _cream     = Color(0xFFFAF8F0);
+const _parchment = Color(0xFFF0EAD6);
+const _ink       = Color(0xFF1A1208);
+const _inkMid    = Color(0xFF5C4A2A);
+const _inkLight  = Color(0xFFAA9070);
+const _gold      = Color(0xFFC8A820);
+const _green     = Color(0xFF1B4D3E);
 
-const _navy     = Color(0xFF080D1A);
-const _navyCard = Color(0xFF0F1629);
-const _navyEle  = Color(0xFF17203A);
-const _gold     = Color(0xFFD4AF37);
-const _goldDim  = Color(0x33D4AF37);
-const _white     = Colors.white;
-const _white60   = Color(0x99FFFFFF);
-const _white30   = Color(0x4DFFFFFF);
-
-// ─── Last-read provider ───────────────────────────────────────────────────────
-
+// ─── Last-read provider ────────────────────────────────────────────────────────
 final _lastReadProvider = FutureProvider<int?>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   final p = prefs.getInt(AppConstants.prefLastMushafPage);
   return (p != null && p > 1) ? p : null;
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
+// ─── Screen ────────────────────────────────────────────────────────────────────
 class QuranHomeScreen extends ConsumerStatefulWidget {
   const QuranHomeScreen({super.key});
-
   @override
   ConsumerState<QuranHomeScreen> createState() => _QuranHomeScreenState();
 }
@@ -63,120 +58,143 @@ class _QuranHomeScreenState extends ConsumerState<QuranHomeScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: _navy,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _Header(onSearchTap: () => context.push('/quran/search')),
-              _ContinueReadingBanner(),
-              _SearchBar(
-                controller: _search,
-                onChanged: (v) => setState(() => _query = v.trim()),
-              ),
-              _TabRow(controller: _tab),
-              Expanded(
-                child: TabBarView(
-                  controller: _tab,
+        backgroundColor: _cream,
+        body: Column(
+          children: [
+            _QuranHeader(),
+            Expanded(
+              child: SafeArea(
+                top: false,
+                child: Column(
                   children: [
-                    _SurahTab(query: _query),
-                    _JuzTab(),
-                    _BookmarksTabNew(),
+                    _ContinueReadingBanner(),
+                    _SearchBar(
+                      controller: _search,
+                      onChanged: (v) => setState(() => _query = v.trim()),
+                    ),
+                    _TabRow(controller: _tab),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tab,
+                        children: [
+                          _SurahTab(query: _query),
+                          _JuzTab(),
+                          _BookmarksTab(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        // Gold Mushaf FAB
         floatingActionButton: _MushafFab(),
       ),
     );
   }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
-
-class _Header extends StatelessWidget {
-  final VoidCallback onSearchTap;
-  const _Header({required this.onSearchTap});
-
+// ─── Header ────────────────────────────────────────────────────────────────────
+class _QuranHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _goldDim,
-              border: Border.all(color: _gold.withOpacity(0.5), width: 1),
-            ),
-            child: const Center(
-              child: Text('☽', style: TextStyle(fontSize: 18)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'القرآن الكريم',
-                  style: TextStyle(
-                    fontFamily: 'NotoNaskhArabic',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: _white,
+      color: _green,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Open Mushaf icon
+                  InkWell(
+                    onTap: () => context.push('/quran/mushaf'),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(Icons.menu_book_rounded,
+                          color: _gold.withOpacity(0.85), size: 24),
+                    ),
                   ),
-                ),
-                Text(
-                  'The Holy Quran',
-                  style: TextStyle(fontSize: 11, color: _white60, height: 1.2),
-                ),
-              ],
+                  // Title
+                  const Text(
+                    'القرآن الكريم',
+                    style: TextStyle(
+                      fontFamily: 'AmiriQuran',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: _gold,
+                      height: 1.6,
+                    ),
+                  ),
+                  // Search icon
+                  InkWell(
+                    onTap: () => context.push('/quran/search'),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(Icons.search_rounded,
+                          color: _gold.withOpacity(0.85), size: 24),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search_rounded, color: _white60, size: 22),
-            onPressed: onSearchTap,
-          ),
-        ],
+            // Decorative divider
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(height: 1, color: _gold.withOpacity(0.35)),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _gold.withOpacity(0.6),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(height: 1, color: _gold.withOpacity(0.35)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Continue reading banner ──────────────────────────────────────────────────
-
+// ─── Continue reading banner ───────────────────────────────────────────────────
 class _ContinueReadingBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lastRead = ref.watch(_lastReadProvider);
-
     return lastRead.when(
       data: (page) {
         if (page == null) return const SizedBox.shrink();
         return GestureDetector(
           onTap: () => context.push('/quran/mushaf?page=$page'),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: LinearGradient(
-                colors: [_gold.withOpacity(0.15), _gold.withOpacity(0.05)],
-                begin: Alignment.centerRight,
-                end: Alignment.centerLeft,
-              ),
-              border: Border.all(color: _gold.withOpacity(0.35), width: 1),
+              color: _green.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _green.withOpacity(0.2), width: 1),
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_stories_outlined, color: _gold, size: 20),
+                Icon(Icons.auto_stories_outlined, color: _green, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -184,13 +202,13 @@ class _ContinueReadingBanner extends ConsumerWidget {
                     style: const TextStyle(
                       fontFamily: 'NotoNaskhArabic',
                       fontSize: 14,
-                      color: _gold,
+                      color: _green,
                       fontWeight: FontWeight.w600,
                     ),
                     textDirection: TextDirection.rtl,
                   ),
                 ),
-                const Icon(Icons.chevron_left, color: _gold, size: 18),
+                Icon(Icons.chevron_left, color: _green.withOpacity(0.6), size: 18),
               ],
             ),
           ),
@@ -202,8 +220,7 @@ class _ContinueReadingBanner extends ConsumerWidget {
   }
 }
 
-// ─── Search bar ───────────────────────────────────────────────────────────────
-
+// ─── Search bar ────────────────────────────────────────────────────────────────
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -212,31 +229,39 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         textDirection: TextDirection.rtl,
         style: const TextStyle(
           fontFamily: 'NotoNaskhArabic',
-          color: _white,
+          color: _ink,
           fontSize: 14,
         ),
         decoration: InputDecoration(
           hintText: 'ابحث عن سورة...',
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontFamily: 'NotoNaskhArabic',
-            color: _white30,
+            color: _inkLight,
             fontSize: 14,
           ),
-          prefixIcon: const Icon(Icons.search, color: _white30, size: 20),
+          prefixIcon: Icon(Icons.search, color: _inkLight, size: 20),
           filled: true,
-          fillColor: _navyEle,
+          fillColor: _parchment,
           contentPadding:
               const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _gold.withOpacity(0.3), width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _gold.withOpacity(0.3), width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _gold.withOpacity(0.7), width: 1.5),
           ),
         ),
       ),
@@ -244,42 +269,43 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ─── Tab row ──────────────────────────────────────────────────────────────────
-
+// ─── Tab row ───────────────────────────────────────────────────────────────────
 class _TabRow extends StatelessWidget {
   final TabController controller;
   const _TabRow({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return TabBar(
-      controller: controller,
-      labelColor: _gold,
-      unselectedLabelColor: _white60,
-      indicatorColor: _gold,
-      indicatorSize: TabBarIndicatorSize.label,
-      indicatorWeight: 2,
-      dividerColor: _navyEle,
-      labelStyle: const TextStyle(
-        fontFamily: 'NotoNaskhArabic',
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
+    return Container(
+      color: _cream,
+      child: TabBar(
+        controller: controller,
+        labelColor: _green,
+        unselectedLabelColor: _inkLight,
+        indicatorColor: _gold,
+        indicatorSize: TabBarIndicatorSize.label,
+        indicatorWeight: 2.5,
+        dividerColor: _parchment,
+        labelStyle: const TextStyle(
+          fontFamily: 'NotoNaskhArabic',
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'NotoNaskhArabic',
+          fontSize: 14,
+        ),
+        tabs: const [
+          Tab(text: 'السور'),
+          Tab(text: 'الأجزاء'),
+          Tab(text: 'المفضلة'),
+        ],
       ),
-      unselectedLabelStyle: const TextStyle(
-        fontFamily: 'NotoNaskhArabic',
-        fontSize: 14,
-      ),
-      tabs: const [
-        Tab(text: 'السور'),
-        Tab(text: 'الأجزاء'),
-        Tab(text: 'المفضلة'),
-      ],
     );
   }
 }
 
-// ─── Surah tab ────────────────────────────────────────────────────────────────
-
+// ─── Surah tab ─────────────────────────────────────────────────────────────────
 class _SurahTab extends ConsumerWidget {
   final String query;
   const _SurahTab({required this.query});
@@ -287,12 +313,11 @@ class _SurahTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final surahsAsync = ref.watch(surahListProvider);
-
     return surahsAsync.when(
       loading: () => const Center(
           child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
-      error: (e, _) => Center(
-          child: Text('$e', style: const TextStyle(color: _white60))),
+      error: (e, _) =>
+          Center(child: Text('$e', style: const TextStyle(color: _inkMid))),
       data: (surahs) {
         final filtered = query.isEmpty
             ? surahs
@@ -305,7 +330,7 @@ class _SurahTab extends ConsumerWidget {
                 .toList();
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 4, bottom: 80),
+          padding: const EdgeInsets.only(top: 4, bottom: 100),
           itemCount: filtered.length,
           itemBuilder: (_, i) => _SurahRow(surah: filtered[i]),
         );
@@ -323,33 +348,14 @@ class _SurahRow extends StatelessWidget {
     final isMeccan = surah.revelationType == 'meccan';
     return InkWell(
       onTap: () => context.push('/quran/surah/${surah.number}'),
-      splashColor: _goldDim,
-      highlightColor: Colors.transparent,
+      splashColor: _gold.withOpacity(0.08),
+      highlightColor: _gold.withOpacity(0.04),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         child: Row(
           children: [
-            // Number badge
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(Icons.star_outline_rounded,
-                      color: _gold.withOpacity(0.6), size: 40),
-                  Text(
-                    ArabicUtils.toArabicNumerals(surah.number),
-                    style: const TextStyle(
-                      fontFamily: 'AmiriQuran',
-                      fontSize: 12,
-                      color: _gold,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Number badge – octagonal look
+            _NumberBadge(number: surah.number),
             const SizedBox(width: 14),
             // Info
             Expanded(
@@ -358,39 +364,45 @@ class _SurahRow extends StatelessWidget {
                 children: [
                   Text(
                     surah.nameTransliteration,
-                    style: const TextStyle(
-                        fontSize: 12, color: _white60, height: 1.2),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: _inkMid,
+                        height: 1.2),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                            horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: isMeccan
                               ? _gold.withOpacity(0.12)
-                              : Colors.blue.withOpacity(0.12),
+                              : _green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isMeccan
+                                ? _gold.withOpacity(0.3)
+                                : _green.withOpacity(0.25),
+                            width: 0.5,
+                          ),
                         ),
                         child: Text(
                           isMeccan ? 'مكية' : 'مدنية',
                           style: TextStyle(
                             fontFamily: 'NotoNaskhArabic',
                             fontSize: 10,
-                            color: isMeccan
-                                ? _gold
-                                : Colors.blue.shade300,
+                            color: isMeccan ? _gold : _green,
                           ),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '${ArabicUtils.toArabicNumerals(surah.ayahCount)} آية',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontFamily: 'NotoNaskhArabic',
                             fontSize: 11,
-                            color: _white60),
+                            color: _inkLight),
                       ),
                     ],
                   ),
@@ -402,8 +414,8 @@ class _SurahRow extends StatelessWidget {
               surah.nameArabic,
               style: const TextStyle(
                 fontFamily: 'AmiriQuran',
-                fontSize: 20,
-                color: _white,
+                fontSize: 22,
+                color: _ink,
                 height: 1.5,
               ),
               locale: const Locale('ar'),
@@ -415,13 +427,42 @@ class _SurahRow extends StatelessWidget {
   }
 }
 
-// ─── Juz tab ──────────────────────────────────────────────────────────────────
+// Octagonal number badge inspired by Mushaf ayah markers
+class _NumberBadge extends StatelessWidget {
+  final int number;
+  const _NumberBadge({required this.number});
 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: _gold.withOpacity(0.1),
+        border: Border.all(color: _gold.withOpacity(0.55), width: 1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: Text(
+          ArabicUtils.toArabicNumerals(number),
+          style: const TextStyle(
+            fontFamily: 'AmiriQuran',
+            fontSize: 13,
+            color: _gold,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Juz tab ───────────────────────────────────────────────────────────────────
 class _JuzTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 10,
@@ -431,35 +472,43 @@ class _JuzTab extends StatelessWidget {
       itemCount: 30,
       itemBuilder: (_, i) {
         final juz = i + 1;
-        return GestureDetector(
-          onTap: () {},
-          child: Container(
-            decoration: BoxDecoration(
-              color: _navyCard,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _white30.withOpacity(0.08), width: 1),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  ArabicUtils.toArabicNumerals(juz),
-                  style: const TextStyle(
-                    fontFamily: 'AmiriQuran',
-                    fontSize: 28,
-                    color: _gold,
-                    fontWeight: FontWeight.w700,
+        return Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {},
+            splashColor: _gold.withOpacity(0.12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _parchment,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _gold.withOpacity(0.3), width: 1),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    ArabicUtils.toArabicNumerals(juz),
+                    style: const TextStyle(
+                      fontFamily: 'AmiriQuran',
+                      fontSize: 30,
+                      color: _green,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
                   ),
-                ),
-                const Text(
-                  'الجزء',
-                  style: TextStyle(
-                    fontFamily: 'NotoNaskhArabic',
-                    fontSize: 12,
-                    color: _white60,
+                  const SizedBox(height: 2),
+                  const Text(
+                    'الجزء',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 11,
+                      color: _inkMid,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -468,34 +517,35 @@ class _JuzTab extends StatelessWidget {
   }
 }
 
-// ─── Bookmarks tab ────────────────────────────────────────────────────────────
-
-class _BookmarksTabNew extends ConsumerWidget {
+// ─── Bookmarks tab ─────────────────────────────────────────────────────────────
+class _BookmarksTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(mushafBookmarksProvider);
-
     return bookmarks.when(
       loading: () => const Center(
           child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
       error: (_, __) => const SizedBox.shrink(),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.bookmark_outline_rounded, size: 48, color: _white30),
-                SizedBox(height: 12),
-                Text(
+                Icon(Icons.bookmark_outline_rounded,
+                    size: 52, color: _inkLight.withOpacity(0.5)),
+                const SizedBox(height: 14),
+                const Text(
                   'لا توجد إشارات مرجعية',
                   style: TextStyle(
-                      fontFamily: 'NotoNaskhArabic', color: _white60),
+                      fontFamily: 'NotoNaskhArabic',
+                      color: _inkMid,
+                      fontSize: 15),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'اضغط 🔖 في المصحف لحفظ صفحة',
-                  style: TextStyle(fontSize: 12, color: _white30),
+                  style: TextStyle(fontSize: 12, color: _inkLight),
                 ),
               ],
             ),
@@ -503,10 +553,10 @@ class _BookmarksTabNew extends ConsumerWidget {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
           itemCount: list.length,
           separatorBuilder: (_, __) =>
-              Divider(color: _white.withOpacity(0.06), height: 1),
+              Divider(color: _gold.withOpacity(0.15), height: 1),
           itemBuilder: (_, i) {
             final bm = list[i];
             final page = int.tryParse(bm.referenceId) ?? 1;
@@ -518,8 +568,8 @@ class _BookmarksTabNew extends ConsumerWidget {
               background: Container(
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 20),
-                color: Colors.red.shade800,
-                child: const Icon(Icons.delete_outline, color: _white),
+                color: Colors.red.shade700,
+                child: const Icon(Icons.delete_outline, color: Colors.white),
               ),
               onDismissed: (_) => ref
                   .read(appDatabaseProvider)
@@ -529,20 +579,20 @@ class _BookmarksTabNew extends ConsumerWidget {
                 onTap: () => context.push('/quran/mushaf?page=$page'),
                 contentPadding: const EdgeInsets.symmetric(vertical: 4),
                 leading: Container(
-                  width: 46,
-                  height: 46,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _goldDim,
-                    border:
-                        Border.all(color: _gold.withOpacity(0.4), width: 1),
+                    color: _gold.withOpacity(0.1),
+                    border: Border.all(
+                        color: _gold.withOpacity(0.45), width: 1),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Center(
                     child: Text(
                       ArabicUtils.toArabicNumerals(page),
                       style: const TextStyle(
                         fontFamily: 'AmiriQuran',
-                        fontSize: 14,
+                        fontSize: 15,
                         color: _gold,
                         fontWeight: FontWeight.w700,
                       ),
@@ -554,15 +604,15 @@ class _BookmarksTabNew extends ConsumerWidget {
                     d?.surahName ?? 'صفحة $page',
                     style: const TextStyle(
                       fontFamily: 'NotoNaskhArabic',
-                      color: _white,
+                      color: _ink,
                       fontWeight: FontWeight.w600,
                     ),
                     textDirection: TextDirection.rtl,
                   ),
                   loading: () => Text(
                     'صفحة ${ArabicUtils.toArabicNumerals(page)}',
-                    style:
-                        const TextStyle(fontFamily: 'NotoNaskhArabic', color: _white),
+                    style: const TextStyle(
+                        fontFamily: 'NotoNaskhArabic', color: _ink),
                   ),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -571,9 +621,9 @@ class _BookmarksTabNew extends ConsumerWidget {
                       ? null
                       : Text(
                           'الجزء ${ArabicUtils.toArabicNumerals(d.juzNumber)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontFamily: 'NotoNaskhArabic',
-                              color: _white60,
+                              color: _inkMid,
                               fontSize: 12),
                           textDirection: TextDirection.rtl,
                         ),
@@ -581,7 +631,7 @@ class _BookmarksTabNew extends ConsumerWidget {
                   error: (_, __) => null,
                 ),
                 trailing:
-                    const Icon(Icons.chevron_left, color: _white30, size: 18),
+                    Icon(Icons.chevron_left, color: _inkLight, size: 18),
               ),
             );
           },
@@ -591,43 +641,38 @@ class _BookmarksTabNew extends ConsumerWidget {
   }
 }
 
-// ─── Mushaf FAB ───────────────────────────────────────────────────────────────
-
+// ─── Mushaf FAB ────────────────────────────────────────────────────────────────
 class _MushafFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push('/quran/mushaf'),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD4AF37), Color(0xFFF0C84A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(30),
+          color: _green,
+          border: Border.all(color: _gold.withOpacity(0.5), width: 1),
           boxShadow: [
             BoxShadow(
-              color: _gold.withOpacity(0.4),
-              blurRadius: 16,
+              color: _green.withOpacity(0.4),
+              blurRadius: 14,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.menu_book_rounded, color: _navy, size: 20),
-            SizedBox(width: 8),
-            Text(
+            Icon(Icons.menu_book_rounded, color: _gold, size: 20),
+            const SizedBox(width: 8),
+            const Text(
               'فتح المصحف',
               style: TextStyle(
                 fontFamily: 'NotoNaskhArabic',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: _navy,
+                color: _gold,
               ),
             ),
           ],

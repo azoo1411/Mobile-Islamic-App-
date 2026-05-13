@@ -10,15 +10,38 @@ import '../../../../core/utils/arabic_utils.dart';
 import '../../../../database/app_database.dart';
 import '../providers/bookmarks_provider.dart';
 
-// ─── Reading mode ─────────────────────────────────────────────────────────────
-
+// ─── Reading mode ──────────────────────────────────────────────────────────────
 enum MushafMode { white, sepia, dark }
 
 extension _MushafModeX on MushafMode {
   Color get background => switch (this) {
-        MushafMode.white => const Color(0xFFFAF7F0),
+        MushafMode.white => const Color(0xFFFAF8F0),
         MushafMode.sepia => const Color(0xFFEEDFBB),
         MushafMode.dark  => const Color(0xFF18181B),
+      };
+
+  Color get overlayBg => switch (this) {
+        MushafMode.white => const Color(0xFFF0EAD6),
+        MushafMode.sepia => const Color(0xFFE8D9AC),
+        MushafMode.dark  => const Color(0xFF1F1F24),
+      };
+
+  Color get textColor => switch (this) {
+        MushafMode.white => const Color(0xFF1A1208),
+        MushafMode.sepia => const Color(0xFF2D1B0E),
+        MushafMode.dark  => const Color(0xFFE8DCC8),
+      };
+
+  Color get subtextColor => switch (this) {
+        MushafMode.white => const Color(0xFF5C4A2A),
+        MushafMode.sepia => const Color(0xFF5C4A2A),
+        MushafMode.dark  => const Color(0xFFAA9070),
+      };
+
+  Color get borderColor => switch (this) {
+        MushafMode.white => const Color(0xFFC8A820),
+        MushafMode.sepia => const Color(0xFFA88618),
+        MushafMode.dark  => const Color(0xFF5A4A28),
       };
 
   ColorFilter? get filter => switch (this) {
@@ -50,8 +73,7 @@ extension _MushafModeX on MushafMode {
       };
 }
 
-// ─── Page-info provider ───────────────────────────────────────────────────────
-
+// ─── Page-info provider ────────────────────────────────────────────────────────
 class MushafPageInfo {
   final String surahName;
   final int juzNumber;
@@ -70,8 +92,7 @@ final mushafPageInfoProvider =
   );
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
+// ─── Screen ────────────────────────────────────────────────────────────────────
 class MushafScreen extends ConsumerStatefulWidget {
   final int initialPage;
   const MushafScreen({super.key, this.initialPage = 1});
@@ -83,7 +104,7 @@ class MushafScreen extends ConsumerStatefulWidget {
 class _MushafScreenState extends ConsumerState<MushafScreen> {
   late PageController _pageController;
   late int _currentPage;
-  int _sliderPage = 1; // tracks slider while dragging
+  int _sliderPage = 1;
   bool _showOverlay = true;
   MushafMode _mode = MushafMode.white;
 
@@ -100,15 +121,11 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Mode
     final modeStr = prefs.getString(_prefMode) ?? 'white';
     final mode = MushafMode.values.firstWhere(
       (m) => m.name == modeStr,
       orElse: () => MushafMode.white,
     );
-
-    // Last page (only when opened from default)
     final savedPage = widget.initialPage == 1
         ? (prefs.getInt(AppConstants.prefLastMushafPage) ?? 1)
         : widget.initialPage;
@@ -140,7 +157,7 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: 'البداية',
-          textColor: const Color(0xFFD4AF37),
+          textColor: const Color(0xFFC8A820),
           onPressed: () {
             _pageController.jumpToPage(0);
             setState(() {
@@ -171,27 +188,42 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
     final result = await showDialog<int>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('انتقل إلى صفحة',
+        backgroundColor: _mode.overlayBg,
+        title: Text('انتقل إلى صفحة',
             textDirection: TextDirection.rtl,
-            style: TextStyle(fontFamily: 'NotoNaskhArabic')),
+            style: TextStyle(
+                fontFamily: 'NotoNaskhArabic', color: _mode.textColor)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          decoration: const InputDecoration(hintText: '1 – 604'),
+          style: TextStyle(color: _mode.textColor),
+          decoration: InputDecoration(
+            hintText: '١ – ٦٠٤',
+            hintStyle: TextStyle(color: _mode.subtextColor),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: _mode.borderColor),
+            ),
+          ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text('إلغاء',
+                style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: _mode.subtextColor)),
           ),
           TextButton(
             onPressed: () {
               final p = int.tryParse(controller.text);
               if (p != null && p >= 1 && p <= 604) Navigator.pop(context, p);
             },
-            child: const Text('انتقال'),
+            child: Text('انتقال',
+                style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: const Color(0xFF1B4D3E))),
           ),
         ],
       ),
@@ -214,15 +246,10 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
   @override
   Widget build(BuildContext context) {
     final info = ref.watch(mushafPageInfoProvider(_currentPage));
+    final isDark = _mode == MushafMode.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _showOverlay
-          ? SystemUiOverlayStyle.light
-          : SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness:
-                  _mode == MushafMode.dark ? Brightness.light : Brightness.dark,
-            ),
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: _mode.background,
         body: GestureDetector(
@@ -230,7 +257,7 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
           onTap: () => setState(() => _showOverlay = !_showOverlay),
           child: Stack(
             children: [
-              // ── Pages ──────────────────────────────────────────
+              // ── Pages ───────────────────────────────────────────
               PageView.builder(
                 controller: _pageController,
                 reverse: true,
@@ -246,10 +273,10 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
                     _MushafPageImage(pageNumber: i + 1, mode: _mode),
               ),
 
-              // ── Top overlay ────────────────────────────────────
+              // ── Top overlay ──────────────────────────────────────
               AnimatedOpacity(
                 opacity: _showOverlay ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 220),
                 child: IgnorePointer(
                   ignoring: !_showOverlay,
                   child: _TopOverlay(
@@ -264,10 +291,10 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
                 ),
               ),
 
-              // ── Bottom overlay ─────────────────────────────────
+              // ── Bottom overlay ───────────────────────────────────
               AnimatedOpacity(
                 opacity: _showOverlay ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 220),
                 child: IgnorePointer(
                   ignoring: !_showOverlay,
                   child: _BottomOverlay(
@@ -292,8 +319,7 @@ class _MushafScreenState extends ConsumerState<MushafScreen> {
   }
 }
 
-// ─── Top overlay ──────────────────────────────────────────────────────────────
-
+// ─── Top overlay ───────────────────────────────────────────────────────────────
 class _TopOverlay extends ConsumerWidget {
   final AsyncValue<MushafPageInfo?> info;
   final int currentPage;
@@ -322,80 +348,104 @@ class _TopOverlay extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+          colors: [
+            mode.overlayBg.withOpacity(0.97),
+            mode.overlayBg.withOpacity(0.0),
+          ],
+          stops: const [0.0, 1.0],
         ),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new,
-                    color: Colors.white, size: 20),
-                onPressed: onBack,
-              ),
-              Expanded(
-                child: info.when(
-                  data: (d) => d == null
-                      ? const SizedBox.shrink()
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              d.surahName,
-                              style: const TextStyle(
-                                fontFamily: 'NotoNaskhArabic',
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Decorative top border line
+            Container(
+              height: 1.5,
+              color: mode.borderColor.withOpacity(0.5),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                children: [
+                  // Back
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new,
+                        color: mode.textColor, size: 19),
+                    onPressed: onBack,
+                  ),
+                  // Center info
+                  Expanded(
+                    child: info.when(
+                      data: (d) => d == null
+                          ? const SizedBox.shrink()
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  d.surahName,
+                                  style: TextStyle(
+                                    fontFamily: 'AmiriQuran',
+                                    fontSize: 18,
+                                    color: mode.textColor,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                  ),
+                                  locale: const Locale('ar'),
+                                ),
+                                Text(
+                                  'الجزء ${ArabicUtils.toArabicNumerals(d.juzNumber)}',
+                                  style: TextStyle(
+                                    fontFamily: 'NotoNaskhArabic',
+                                    fontSize: 11,
+                                    color: mode.subtextColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              'الجزء ${ArabicUtils.toArabicNumerals(d.juzNumber)}',
-                              style: const TextStyle(
-                                fontFamily: 'NotoNaskhArabic',
-                                fontSize: 12,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ),
+                  // Mode toggle
+                  IconButton(
+                    icon: Icon(mode.icon, color: mode.textColor, size: 19),
+                    tooltip: mode.label,
+                    onPressed: onCycleMode,
+                  ),
+                  // Bookmark
+                  IconButton(
+                    icon: Icon(
+                      isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                      color: isBookmarked
+                          ? const Color(0xFFC8A820)
+                          : mode.textColor,
+                      size: 21,
+                    ),
+                    onPressed: onBookmark,
+                  ),
+                  // Jump
+                  IconButton(
+                    icon: Icon(Icons.find_in_page_outlined,
+                        color: mode.textColor, size: 21),
+                    onPressed: onJump,
+                  ),
+                ],
               ),
-              // Mode toggle
-              IconButton(
-                icon: Icon(mode.icon, color: Colors.white, size: 20),
-                tooltip: mode.label,
-                onPressed: onCycleMode,
-              ),
-              // Bookmark
-              IconButton(
-                icon: Icon(
-                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  color: isBookmarked ? const Color(0xFFD4AF37) : Colors.white,
-                  size: 22,
-                ),
-                onPressed: onBookmark,
-              ),
-              // Page jump
-              IconButton(
-                icon: const Icon(Icons.find_in_page_outlined,
-                    color: Colors.white, size: 22),
-                onPressed: onJump,
-              ),
-            ],
-          ),
+            ),
+            // Decorative bottom border line under the controls
+            Container(
+              height: 1,
+              color: mode.borderColor.withOpacity(0.25),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ─── Bottom overlay (with page slider) ───────────────────────────────────────
-
+// ─── Bottom overlay ────────────────────────────────────────────────────────────
 class _BottomOverlay extends StatelessWidget {
   final int currentPage;
   final int sliderPage;
@@ -417,12 +467,15 @@ class _BottomOverlay extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.only(bottom: 16, top: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.55), Colors.transparent],
+            colors: [
+              mode.overlayBg.withOpacity(0.97),
+              mode.overlayBg.withOpacity(0.0),
+            ],
+            stops: const [0.0, 1.0],
           ),
         ),
         child: SafeArea(
@@ -430,29 +483,43 @@ class _BottomOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Page number while dragging
-              Text(
-                ArabicUtils.toArabicNumerals(sliderPage),
-                style: const TextStyle(
-                  fontFamily: 'NotoNaskhArabic',
-                  fontSize: 15,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+              // Decorative top border line
+              Container(
+                height: 1,
+                color: mode.borderColor.withOpacity(0.25),
+              ),
+              const SizedBox(height: 4),
+              // Page number in decorative box
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                decoration: BoxDecoration(
+                  color: mode.borderColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: mode.borderColor.withOpacity(0.35), width: 1),
+                ),
+                child: Text(
+                  ArabicUtils.toArabicNumerals(sliderPage),
+                  style: TextStyle(
+                    fontFamily: 'AmiriQuran',
+                    fontSize: 14,
+                    color: mode.textColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              // Slider
               SliderTheme(
                 data: SliderThemeData(
-                  activeTrackColor: const Color(0xFFD4AF37),
-                  inactiveTrackColor: Colors.white24,
-                  thumbColor: const Color(0xFFD4AF37),
-                  overlayColor: const Color(0x44D4AF37),
-                  trackHeight: 2,
+                  activeTrackColor: const Color(0xFFC8A820),
+                  inactiveTrackColor: mode.borderColor.withOpacity(0.2),
+                  thumbColor: const Color(0xFFC8A820),
+                  overlayColor: const Color(0x33C8A820),
+                  trackHeight: 1.5,
                   thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      const RoundSliderThumbShape(enabledThumbRadius: 5.5),
                   overlayShape:
-                      const RoundSliderOverlayShape(overlayRadius: 14),
+                      const RoundSliderOverlayShape(overlayRadius: 13),
                 ),
                 child: Slider(
                   value: sliderPage.toDouble(),
@@ -462,6 +529,7 @@ class _BottomOverlay extends StatelessWidget {
                   onChangeEnd: onSliderEnd,
                 ),
               ),
+              const SizedBox(height: 2),
             ],
           ),
         ),
@@ -470,8 +538,7 @@ class _BottomOverlay extends StatelessWidget {
   }
 }
 
-// ─── Single page image (multi-CDN with automatic fallback) ───────────────────
-
+// ─── Single page image (multi-CDN fallback) ────────────────────────────────────
 class _MushafPageImage extends StatefulWidget {
   final int pageNumber;
   final MushafMode mode;
@@ -504,59 +571,50 @@ class _MushafPageImageState extends State<_MushafPageImage> {
   @override
   Widget build(BuildContext context) {
     final mode = widget.mode;
+    final isDark = mode == MushafMode.dark;
 
     Widget image = CachedNetworkImage(
       key: ValueKey('${widget.pageNumber}_$_cdnIndex'),
       imageUrl: _urls[_cdnIndex],
       fit: BoxFit.contain,
       placeholder: (_, __) => Shimmer.fromColors(
-        baseColor: mode == MushafMode.dark
+        baseColor: isDark
             ? const Color(0xFF2A2A2F)
             : const Color(0xFFEDE8DC),
-        highlightColor: mode == MushafMode.dark
+        highlightColor: isDark
             ? const Color(0xFF3A3A40)
             : const Color(0xFFF8F5EE),
-        child: Container(
-          decoration: BoxDecoration(
-            color: mode.background,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
+        child: Container(color: mode.background),
       ),
       errorWidget: (_, __, ___) {
-        // Try next CDN silently
         if (_cdnIndex < _urls.length - 1) {
           _tryNext();
-          // Show shimmer while switching CDN
           return Shimmer.fromColors(
-            baseColor: mode == MushafMode.dark
+            baseColor: isDark
                 ? const Color(0xFF2A2A2F)
                 : const Color(0xFFEDE8DC),
-            highlightColor: mode == MushafMode.dark
+            highlightColor: isDark
                 ? const Color(0xFF3A3A40)
                 : const Color(0xFFF8F5EE),
             child: Container(color: mode.background),
           );
         }
-        // All CDNs failed
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.menu_book_outlined,
                   size: 64,
-                  color: mode == MushafMode.dark
-                      ? Colors.white38
-                      : const Color(0xFFD4AF37)),
+                  color: isDark
+                      ? Colors.white24
+                      : const Color(0xFFC8A820).withOpacity(0.4)),
               const SizedBox(height: 12),
               Text(
                 'تعذّر تحميل الصفحة\nتحقق من الاتصال بالإنترنت',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'NotoNaskhArabic',
-                  color: mode == MushafMode.dark
-                      ? Colors.white38
-                      : const Color(0xFF888888),
+                  color: isDark ? Colors.white38 : const Color(0xFF9E8866),
                 ),
               ),
             ],
@@ -569,6 +627,13 @@ class _MushafPageImageState extends State<_MushafPageImage> {
       image = ColorFiltered(colorFilter: mode.filter!, child: image);
     }
 
-    return Padding(padding: const EdgeInsets.all(4), child: image);
+    // Subtle inner shadow to simulate page edges
+    return Container(
+      color: mode.background,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: image,
+      ),
+    );
   }
 }
