@@ -9,23 +9,18 @@ import '../../../../database/app_database.dart';
 import '../providers/audio_provider.dart';
 import '../providers/bookmarks_provider.dart';
 import '../providers/quran_provider.dart';
-import '../providers/tafsir_provider.dart';
 import '../widgets/tafsir_sheet.dart';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens ─────────────────────────────────────────────────────────────
+const _cream    = Color(0xFFFAF8F0);
+const _parchment = Color(0xFFF0EAD6);
+const _ink      = Color(0xFF1A1208);
+const _inkMid   = Color(0xFF5C4A2A);
+const _inkLight = Color(0xFFAA9070);
+const _gold     = Color(0xFFC8A820);
+const _green    = Color(0xFF1B4D3E);
 
-const _navy     = Color(0xFF080D1A);
-const _navyCard = Color(0xFF0F1629);
-const _navyEle  = Color(0xFF17203A);
-const _gold     = Color(0xFFD4AF37);
-const _goldDim  = Color(0x33D4AF37);
-const _white     = Colors.white;
-const _white70   = Color(0xB3FFFFFF);
-const _white40   = Color(0x66FFFFFF);
-const _white15   = Color(0x26FFFFFF);
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
+// ─── Screen ────────────────────────────────────────────────────────────────────
 class SurahScreen extends ConsumerStatefulWidget {
   final int surahNumber;
   final int startAyah;
@@ -40,15 +35,11 @@ class SurahScreen extends ConsumerStatefulWidget {
   ConsumerState<SurahScreen> createState() => _SurahScreenState();
 }
 
-enum _ReadingTheme { dark, sepia }
-
 class _SurahScreenState extends ConsumerState<SurahScreen> {
   final _scrollController = ScrollController();
   double _fontSize = 22.0;
-  bool _headerVisible = true;
+  bool _showStickyBar = false;
   int? _selectedAyah;
-  _ReadingTheme _theme = _ReadingTheme.dark;
-  // One GlobalKey per ayah — used by auto-scroll
   final Map<int, GlobalKey> _ayahKeys = {};
 
   @override
@@ -58,8 +49,8 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
   }
 
   void _onScroll() {
-    final show = _scrollController.offset < 80;
-    if (show != _headerVisible) setState(() => _headerVisible = show);
+    final show = _scrollController.offset > 160;
+    if (show != _showStickyBar) setState(() => _showStickyBar = show);
   }
 
   @override
@@ -95,39 +86,40 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     // Auto-scroll when playing ayah changes
     ref.listen<({int surah, int ayah})?>(currentlyPlayingAyahProvider,
         (prev, next) {
-      if (next != null && next.surah == widget.surahNumber &&
+      if (next != null &&
+          next.surah == widget.surahNumber &&
           next.ayah != prev?.ayah) {
-        WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _scrollToAyah(next.ayah));
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _scrollToAyah(next.ayah));
       }
     });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        color: _theme == _ReadingTheme.sepia
-            ? const Color(0xFF1E160A)
-            : _navy,
-        child: Scaffold(
-        backgroundColor: Colors.transparent,
+      child: Scaffold(
+        backgroundColor: _cream,
         body: surahAsync.when(
           loading: () => const Center(
               child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
           error: (e, _) =>
-              Center(child: Text('$e', style: const TextStyle(color: _white70))),
+              Center(child: Text('$e', style: const TextStyle(color: _inkMid))),
           data: (data) => Stack(
             children: [
-              // ── Main scroll area ───────────────────────────
+              // ── Main scroll area ──────────────────────────────
               CustomScrollView(
                 controller: _scrollController,
                 slivers: [
+                  // Surah header (collapses on scroll)
                   SliverToBoxAdapter(
                     child: _SurahHeader(
-                        surah: data.surah, visible: _headerVisible),
+                      surah: data.surah,
+                      onBack: () => Navigator.pop(context),
+                    ),
                   ),
+                  // Basmala (except Al-Fatiha and At-Tawba)
                   if (data.surah.number != 1 && data.surah.number != 9)
                     const SliverToBoxAdapter(child: _Basmala()),
+                  // Ayah list
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (_, i) {
@@ -147,7 +139,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                 ],
               ),
 
-              // ── Reading progress bar (top edge) ───────────
+              // ── Reading progress bar (top) ─────────────────────
               Positioned(
                 top: 0,
                 left: 0,
@@ -165,31 +157,36 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                       value: progress,
                       minHeight: 2,
                       backgroundColor: Colors.transparent,
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(_gold),
+                      valueColor: const AlwaysStoppedAnimation<Color>(_gold),
                     );
                   },
                 ),
               ),
 
-              // ── Floating bar ───────────────────────────────
-              _FloatingBar(
-                surah: data.surah,
-                visible: !_headerVisible,
-                fontSize: _fontSize,
-                theme: _theme,
-                onBack: () => Navigator.pop(context),
-                onFontIncrease: () =>
-                    setState(() => _fontSize = (_fontSize + 1).clamp(18, 34)),
-                onFontDecrease: () =>
-                    setState(() => _fontSize = (_fontSize - 1).clamp(18, 34)),
-                onThemeToggle: () => setState(() => _theme =
-                    _theme == _ReadingTheme.dark
-                        ? _ReadingTheme.sepia
-                        : _ReadingTheme.dark),
+              // ── Sticky bar (appears after scrolling past header) ─
+              AnimatedSlide(
+                offset: _showStickyBar ? Offset.zero : const Offset(0, -1),
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeInOut,
+                child: AnimatedOpacity(
+                  opacity: _showStickyBar ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IgnorePointer(
+                    ignoring: !_showStickyBar,
+                    child: _StickyBar(
+                      surah: data.surah,
+                      fontSize: _fontSize,
+                      onBack: () => Navigator.pop(context),
+                      onFontIncrease: () => setState(
+                          () => _fontSize = (_fontSize + 1).clamp(18, 34)),
+                      onFontDecrease: () => setState(
+                          () => _fontSize = (_fontSize - 1).clamp(18, 34)),
+                    ),
+                  ),
+                ),
               ),
 
-              // ── Mini audio player ──────────────────────────
+              // ── Mini audio player (bottom) ─────────────────────
               const Positioned(
                 left: 0,
                 right: 0,
@@ -200,97 +197,109 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
           ),
         ),
       ),
-      ), // AnimatedContainer
     );
   }
 }
 
-// ─── Surah header ─────────────────────────────────────────────────────────────
-
+// ─── Surah header ──────────────────────────────────────────────────────────────
 class _SurahHeader extends StatelessWidget {
   final Surah surah;
-  final bool visible;
-  const _SurahHeader({required this.surah, required this.visible});
+  final VoidCallback onBack;
+  const _SurahHeader({required this.surah, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: visible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 250),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 48, 16, 8),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: [
-              _gold.withOpacity(0.12),
-              _navyCard,
-              _navyCard,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          border: Border.all(color: _gold.withOpacity(0.2), width: 1),
-        ),
+    return Container(
+      color: _green,
+      child: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // Back button row
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _white15,
+            // Nav row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 16, 0),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: onBack,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Icon(Icons.arrow_back_ios_new,
+                          color: _gold.withAlpha(200), size: 18),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new,
-                        color: _white70, size: 16),
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  // Juz indicator
+                  Text(
+                    '${ArabicUtils.toArabicNumerals(surah.number)} :',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      fontSize: 12,
+                      color: _gold.withAlpha(160),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
             // Surah name
             Text(
               surah.nameArabic,
               style: const TextStyle(
                 fontFamily: 'AmiriQuran',
-                fontSize: 36,
-                color: _white,
-                height: 1.4,
+                fontSize: 32,
+                color: _gold,
+                height: 1.5,
               ),
               locale: const Locale('ar'),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
             Text(
               surah.nameTransliteration,
-              style: const TextStyle(
-                fontSize: 13,
-                color: _white40,
-                letterSpacing: 1.5,
+              style: TextStyle(
+                fontSize: 12,
+                color: _gold.withAlpha(150),
+                letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 10),
-            // Pills row
+            // Pills
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _Pill(
+                _HeaderPill(
                   label: surah.revelationType == 'meccan' ? 'مكية' : 'مدنية',
-                  color: _gold,
                 ),
                 const SizedBox(width: 8),
-                _Pill(
+                _HeaderPill(
                   label:
                       '${ArabicUtils.toArabicNumerals(surah.ayahCount)} آية',
-                  color: _white40,
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            // Decorative gold divider
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Expanded(
+                      child: Container(height: 1, color: _gold.withAlpha(80))),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _gold.withAlpha(130),
+                    ),
+                  ),
+                  Expanded(
+                      child: Container(height: 1, color: _gold.withAlpha(80))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
         ),
       ),
@@ -298,41 +307,39 @@ class _SurahHeader extends StatelessWidget {
   }
 }
 
-class _Pill extends StatelessWidget {
+class _HeaderPill extends StatelessWidget {
   final String label;
-  final Color color;
-  const _Pill({required this.label, required this.color});
+  const _HeaderPill({required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: color.withOpacity(0.12),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        color: _gold.withAlpha(30),
+        border: Border.all(color: _gold.withAlpha(80), width: 1),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontFamily: 'NotoNaskhArabic',
           fontSize: 11,
-          color: color == _white40 ? _white70 : color,
+          color: _gold.withAlpha(220),
         ),
       ),
     );
   }
 }
 
-// ─── Basmala ──────────────────────────────────────────────────────────────────
-
+// ─── Basmala ───────────────────────────────────────────────────────────────────
 class _Basmala extends StatelessWidget {
   const _Basmala();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       child: Text(
         'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
         textAlign: TextAlign.center,
@@ -341,7 +348,7 @@ class _Basmala extends StatelessWidget {
         style: const TextStyle(
           fontFamily: 'AmiriQuran',
           fontSize: 26,
-          color: _gold,
+          color: _green,
           height: 2.0,
           fontFeatures: [
             FontFeature.enable('calt'),
@@ -353,8 +360,7 @@ class _Basmala extends StatelessWidget {
   }
 }
 
-// ─── Ayah tile ────────────────────────────────────────────────────────────────
-
+// ─── Ayah tile ─────────────────────────────────────────────────────────────────
 class _AyahTile extends ConsumerWidget {
   final Ayah ayah;
   final double fontSize;
@@ -377,61 +383,69 @@ class _AyahTile extends ConsumerWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: () => showTafsirSheet(
+        context,
+        surahNumber: ayah.surahNumber,
+        ayahNumber: ayah.ayahNumber,
+        ayahText: ayah.textUthmani,
+      ),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+        duration: const Duration(milliseconds: 220),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           color: isPlaying
-              ? _gold.withOpacity(0.10)
+              ? _gold.withAlpha(22)
               : isSelected
-                  ? _navyEle
+                  ? _parchment
                   : Colors.transparent,
           border: isPlaying
-              ? Border.all(color: _gold.withOpacity(0.35), width: 1)
+              ? Border(left: BorderSide(color: _gold, width: 3))
               : isSelected
-                  ? Border.all(color: _white15, width: 1)
+                  ? Border.all(color: _gold.withAlpha(60), width: 0.5)
                   : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                textDirection: TextDirection.rtl,
                 children: [
-                  // Ayah number badge
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 6),
-                    child: _AyahBadge(
-                        number: ayah.ayahNumber, isPlaying: isPlaying),
-                  ),
-                  const SizedBox(width: 8),
-                  // Ayah text
+                  // Ayah text (RTL, takes most space)
                   Expanded(
-                    child: Text(
-                      ayah.textUthmani,
-                      textDirection: TextDirection.rtl,
-                      textAlign: TextAlign.justify,
-                      locale: const Locale('ar'),
-                      style: TextStyle(
-                        fontFamily: 'AmiriQuran',
-                        fontSize: fontSize,
-                        height: 2.1,
-                        color: isPlaying ? _gold : _white,
-                        fontFeatures: const [
-                          FontFeature.enable('calt'),
-                          FontFeature.enable('liga'),
-                          FontFeature.enable('clig'),
-                        ],
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        ayah.textUthmani,
+                        textDirection: TextDirection.rtl,
+                        textAlign: TextAlign.justify,
+                        locale: const Locale('ar'),
+                        style: TextStyle(
+                          fontFamily: 'AmiriQuran',
+                          fontSize: fontSize,
+                          height: 2.2,
+                          color: isPlaying ? _green : _ink,
+                          fontFeatures: const [
+                            FontFeature.enable('calt'),
+                            FontFeature.enable('liga'),
+                            FontFeature.enable('clig'),
+                          ],
+                        ),
                       ),
                     ),
+                  ),
+                  // Ayah number badge
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 6),
+                    child: _AyahBadge(
+                        number: ayah.ayahNumber, isPlaying: isPlaying),
                   ),
                 ],
               ),
             ),
-
             // Inline action row (visible when selected)
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 180),
@@ -456,13 +470,13 @@ class _AyahBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 30,
-      height: 30,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isPlaying ? _gold : _navyEle,
+        borderRadius: BorderRadius.circular(6),
+        color: isPlaying ? _gold.withAlpha(40) : _gold.withAlpha(18),
         border: Border.all(
-          color: isPlaying ? _gold : _white15,
+          color: isPlaying ? _gold : _gold.withAlpha(100),
           width: 1,
         ),
       ),
@@ -472,7 +486,7 @@ class _AyahBadge extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'AmiriQuran',
             fontSize: 11,
-            color: isPlaying ? _navy : _white70,
+            color: isPlaying ? _green : _gold,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -481,8 +495,7 @@ class _AyahBadge extends StatelessWidget {
   }
 }
 
-// ─── Inline ayah actions ──────────────────────────────────────────────────────
-
+// ─── Inline ayah actions ───────────────────────────────────────────────────────
 class _AyahActions extends ConsumerWidget {
   final Ayah ayah;
   const _AyahActions({required this.ayah});
@@ -494,13 +507,12 @@ class _AyahActions extends ConsumerWidget {
         audioState.surahNumber == ayah.surahNumber &&
         audioState.ayahNumber == ayah.ayahNumber;
 
-    // Bookmark check
     final bookmarks = ref.watch(mushafBookmarksProvider).valueOrNull ?? [];
-    final isBookmarked =
-        bookmarks.any((b) => b.referenceId == 'a_${ayah.surahNumber}_${ayah.ayahNumber}');
+    final isBookmarked = bookmarks
+        .any((b) => b.referenceId == 'a_${ayah.surahNumber}_${ayah.ayahNumber}');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -508,7 +520,7 @@ class _AyahActions extends ConsumerWidget {
           _ActionChip(
             icon: isThisPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
             label: isThisPlaying ? 'إيقاف' : 'تشغيل',
-            color: _gold,
+            color: _green,
             onTap: () {
               if (isThisPlaying) {
                 ref.read(audioServiceProvider.notifier).pause();
@@ -525,7 +537,7 @@ class _AyahActions extends ConsumerWidget {
           _ActionChip(
             icon: Icons.menu_book_outlined,
             label: 'تفسير',
-            color: Colors.blue.shade300,
+            color: _inkMid,
             onTap: () => showTafsirSheet(
               context,
               surahNumber: ayah.surahNumber,
@@ -540,7 +552,7 @@ class _AyahActions extends ConsumerWidget {
                 ? Icons.bookmark_rounded
                 : Icons.bookmark_outline_rounded,
             label: 'حفظ',
-            color: isBookmarked ? _gold : _white40,
+            color: isBookmarked ? _gold : _inkLight,
             onTap: () async {
               final dao = ref.read(appDatabaseProvider).bookmarksDao;
               final key = 'a_${ayah.surahNumber}_${ayah.ayahNumber}';
@@ -567,11 +579,12 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ActionChip(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -581,13 +594,13 @@ class _ActionChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: color.withOpacity(0.12),
-          border: Border.all(color: color.withOpacity(0.35), width: 1),
+          color: color.withAlpha(20),
+          border: Border.all(color: color.withAlpha(80), width: 0.8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 15),
+            Icon(icon, color: color, size: 14),
             const SizedBox(width: 4),
             Text(
               label,
@@ -604,122 +617,96 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// ─── Floating bar (appears on scroll) ────────────────────────────────────────
-
-class _FloatingBar extends StatelessWidget {
+// ─── Sticky top bar (appears after scrolling) ──────────────────────────────────
+class _StickyBar extends StatelessWidget {
   final Surah surah;
-  final bool visible;
   final double fontSize;
-  final _ReadingTheme theme;
   final VoidCallback onBack;
   final VoidCallback onFontIncrease;
   final VoidCallback onFontDecrease;
-  final VoidCallback onThemeToggle;
 
-  const _FloatingBar({
+  const _StickyBar({
     required this.surah,
-    required this.visible,
     required this.fontSize,
-    required this.theme,
     required this.onBack,
     required this.onFontIncrease,
     required this.onFontDecrease,
-    required this.onThemeToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: visible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 220),
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: SafeArea(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: _navyCard.withOpacity(0.97),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _white15, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: onBack,
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      color: _white70, size: 18),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    surah.nameArabic,
-                    style: const TextStyle(
-                      fontFamily: 'AmiriQuran',
-                      fontSize: 18,
-                      color: _white,
-                    ),
-                    locale: const Locale('ar'),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Font controls
-                GestureDetector(
-                  onTap: onFontDecrease,
-                  child: const Padding(
-                    padding: EdgeInsets.all(6),
-                    child:
-                        Icon(Icons.text_decrease, color: _white70, size: 18),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '${fontSize.round()}',
-                    style:
-                        const TextStyle(color: _gold, fontSize: 12),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onFontIncrease,
-                  child: const Padding(
-                    padding: EdgeInsets.all(6),
-                    child: Icon(Icons.text_increase, color: _white70, size: 18),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                // Theme toggle
-                GestureDetector(
-                  onTap: onThemeToggle,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      theme == _ReadingTheme.dark
-                          ? Icons.wb_incandescent_outlined
-                          : Icons.nightlight_round,
-                      color: theme == _ReadingTheme.sepia ? _gold : _white70,
-                      size: 18,
+    return Container(
+      color: _green,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(height: 2, color: _gold),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: onBack,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(Icons.arrow_back_ios_new,
+                          color: _gold.withAlpha(200), size: 18),
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Text(
+                      surah.nameArabic,
+                      textAlign: TextAlign.center,
+                      locale: const Locale('ar'),
+                      style: const TextStyle(
+                        fontFamily: 'AmiriQuran',
+                        fontSize: 20,
+                        color: _gold,
+                        height: 1.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Font size controls
+                  InkWell(
+                    onTap: onFontDecrease,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.text_decrease,
+                          color: Colors.white70, size: 18),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Text(
+                      '${fontSize.round()}',
+                      style: const TextStyle(
+                          color: _gold, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: onFontIncrease,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.text_increase,
+                          color: Colors.white70, size: 18),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            Container(height: 1, color: _gold.withAlpha(60)),
+          ],
         ),
       ),
     );
   }
 }
 
-// ─── Mini audio player ────────────────────────────────────────────────────────
-
+// ─── Mini audio player ─────────────────────────────────────────────────────────
 class _MiniPlayer extends ConsumerWidget {
   const _MiniPlayer();
 
@@ -730,13 +717,13 @@ class _MiniPlayer extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: _navyCard,
-        border: Border(top: BorderSide(color: _gold.withOpacity(0.25), width: 1)),
+        color: _green,
+        border: Border(top: BorderSide(color: _gold.withAlpha(80), width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withAlpha(50),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -748,13 +735,13 @@ class _MiniPlayer extends ConsumerWidget {
             children: [
               // Progress ring
               SizedBox(
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 child: CircularProgressIndicator(
                   value: state.isLoading ? null : state.progress,
-                  backgroundColor: _white15,
+                  backgroundColor: Colors.white24,
                   color: _gold,
-                  strokeWidth: 2.5,
+                  strokeWidth: 2,
                 ),
               ),
               const SizedBox(width: 12),
@@ -767,17 +754,18 @@ class _MiniPlayer extends ConsumerWidget {
                       'آية ${ArabicUtils.toArabicNumerals(state.ayahNumber)}',
                       style: const TextStyle(
                         fontFamily: 'NotoNaskhArabic',
-                        color: _white,
+                        color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       _reciterName(state.reciterId),
-                      style: const TextStyle(
-                          fontFamily: 'NotoNaskhArabic',
-                          color: _white40,
-                          fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: 'NotoNaskhArabic',
+                        color: _gold.withAlpha(200),
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -787,8 +775,10 @@ class _MiniPlayer extends ConsumerWidget {
                 onTap: () => ref.read(audioServiceProvider.notifier).next(),
               ),
               _PlayerBtn(
-                icon: state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                size: 30,
+                icon: state.isPlaying
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                size: 28,
                 color: _gold,
                 onTap: () {
                   if (state.isPlaying) {
@@ -805,7 +795,7 @@ class _MiniPlayer extends ConsumerWidget {
               _PlayerBtn(
                 icon: Icons.close,
                 size: 18,
-                color: _white40,
+                color: Colors.white54,
                 onTap: () => ref.read(audioServiceProvider.notifier).hide(),
               ),
             ],
@@ -831,7 +821,7 @@ class _PlayerBtn extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.size = 22,
-    this.color = _white70,
+    this.color = Colors.white70,
   });
 
   @override

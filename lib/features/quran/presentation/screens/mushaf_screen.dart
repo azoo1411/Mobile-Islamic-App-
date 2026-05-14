@@ -493,8 +493,9 @@ class _MushafPageState extends State<_MushafPage> {
     final p = widget.pageNumber;
     final padded = p.toString().padLeft(3, '0');
     return [
-      '${AppConstants.mushafCdnUrls[0]}/$p.jpg',
-      '${AppConstants.mushafCdnUrls[1]}/page-$padded.jpg',
+      '${AppConstants.mushafCdnUrls[0]}/$p.jpg',         // qurancdn: 1.jpg
+      '${AppConstants.mushafCdnUrls[1]}/page$padded.png', // github: page001.png
+      '${AppConstants.mushafCdnUrls[2]}/page-$padded.jpg', // searchtruth: page-001.jpg
     ];
   }
 
@@ -536,8 +537,8 @@ class _MushafPageState extends State<_MushafPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.menu_book_outlined,
-                  size: 64,
+              Icon(Icons.signal_wifi_off_rounded,
+                  size: 56,
                   color: isDark ? Colors.white24 : mode.gold.withAlpha(100)),
               const SizedBox(height: 12),
               Text(
@@ -546,6 +547,30 @@ class _MushafPageState extends State<_MushafPage> {
                 style: TextStyle(
                   fontFamily: 'NotoNaskhArabic',
                   color: isDark ? Colors.white38 : mode.subtext,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => setState(() => _cdnIndex = 0),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: mode.gold.withAlpha(isDark ? 40 : 25),
+                    border: Border.all(
+                        color: mode.gold.withAlpha(isDark ? 100 : 80),
+                        width: 1),
+                  ),
+                  child: Text(
+                    'إعادة المحاولة',
+                    style: TextStyle(
+                      fontFamily: 'NotoNaskhArabic',
+                      color: mode.gold,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],

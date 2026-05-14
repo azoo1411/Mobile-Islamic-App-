@@ -6,8 +6,9 @@ class AppConstants {
 
   // Mushaf page image CDNs — tried in order until one succeeds
   static const List<String> mushafCdnUrls = [
-    'https://static.qurancdn.com/images/mushaf/hafs/compressed',  // {page}.jpg  (no padding)
-    'https://www.searchtruth.com/quran/images2/large',             // page-{001}.jpg (padded)
+    'https://static.qurancdn.com/images/mushaf/hafs/compressed',   // {page}.jpg  (no padding)
+    'https://raw.githubusercontent.com/quran/quran.com-images/master/images/pages', // page{001}.png (padded)
+    'https://www.searchtruth.com/quran/images2/large',              // page-{001}.jpg (padded)
   ];
   // keep for legacy references
   static String get mushafImageBaseUrl => mushafCdnUrls.first;
