@@ -95,7 +95,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: _cream,
         body: surahAsync.when(

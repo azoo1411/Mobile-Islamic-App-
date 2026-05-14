@@ -1,6 +1,5 @@
 import 'dart:math' show sin, pi;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -515,21 +514,30 @@ class _MushafPageState extends State<_MushafPage> {
     // Edge shadow intensity based on turn fraction (simulates page peel)
     final turnShadow = sin(widget.turnFraction * pi) * 0.35;
 
-    Widget image = CachedNetworkImage(
+    // Image.network is used instead of CachedNetworkImage to avoid
+    // the disk-cache that permanently stores failure responses.
+    Widget image = Image.network(
+      _urls[_cdnIndex],
       key: ValueKey('${widget.pageNumber}_$_cdnIndex'),
-      imageUrl: _urls[_cdnIndex],
       fit: BoxFit.contain,
-      placeholder: (_, __) => Shimmer.fromColors(
-        baseColor: isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
-        highlightColor: isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
-        child: Container(color: mode.pageBg),
-      ),
-      errorWidget: (_, __, ___) {
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Shimmer.fromColors(
+          baseColor:
+              isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
+          highlightColor:
+              isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
+          child: Container(color: mode.pageBg),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
         if (_cdnIndex < _urls.length - 1) {
           _tryNext();
           return Shimmer.fromColors(
-            baseColor: isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
-            highlightColor: isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
+            baseColor:
+                isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
+            highlightColor:
+                isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
             child: Container(color: mode.pageBg),
           );
         }
@@ -553,8 +561,8 @@ class _MushafPageState extends State<_MushafPage> {
               GestureDetector(
                 onTap: () => setState(() => _cdnIndex = 0),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: mode.gold.withAlpha(isDark ? 40 : 25),
