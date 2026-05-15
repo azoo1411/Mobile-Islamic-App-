@@ -1,3 +1,5 @@
+import 'dart:math' show pi, sin, cos;
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,13 +14,61 @@ import '../providers/quran_provider.dart';
 import '../widgets/tafsir_sheet.dart';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const _cream    = Color(0xFFFAF8F0);
-const _parchment = Color(0xFFF0EAD6);
-const _ink      = Color(0xFF1A1208);
-const _inkMid   = Color(0xFF5C4A2A);
-const _inkLight = Color(0xFFAA9070);
-const _gold     = Color(0xFFC8A820);
-const _green    = Color(0xFF1B4D3E);
+const _bg       = Color(0xFF0D1F1A); // deep green background
+const _surface  = Color(0xFF122820); // card / tile surface
+const _header   = Color(0xFF091510); // darker header
+const _cream    = Color(0xFFF5EDD5); // primary text
+const _creamMid = Color(0xFFB8AD96); // secondary text
+const _creamDim = Color(0xFF7A7060); // tertiary text
+const _gold     = Color(0xFFC9A84C); // gold accent
+const _goldDim  = Color(0xFF8B6E2A); // dimmed gold border
+
+// ─── Islamic geometric background painter ──────────────────────────────────────
+class _IslamicPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0x0AC9A84C) // 4% opacity gold
+      ..strokeWidth = 0.6
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true;
+
+    const step = 60.0;
+    final cols = (size.width / step).ceil() + 2;
+    final rows = (size.height / step).ceil() + 2;
+
+    for (var r = -1; r < rows; r++) {
+      for (var c = -1; c < cols; c++) {
+        final cx = c * step;
+        final cy = r * step;
+        // 8-pointed star geometry
+        _drawStar(canvas, paint, cx, cy, step * 0.38);
+      }
+    }
+  }
+
+  void _drawStar(Canvas canvas, Paint paint, double cx, double cy, double r) {
+    const n = 8;
+    final inner = r * 0.42;
+    final path = Path();
+    for (var i = 0; i < n * 2; i++) {
+      final angle = (i * pi / n) - pi / 2;
+      final radius = i.isEven ? r : inner;
+      final x = cx + cos(angle) * radius;
+      final y = cy + sin(angle) * radius;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_IslamicPatternPainter old) => false;
+}
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 class SurahScreen extends ConsumerStatefulWidget {
@@ -37,7 +87,7 @@ class SurahScreen extends ConsumerStatefulWidget {
 
 class _SurahScreenState extends ConsumerState<SurahScreen> {
   final _scrollController = ScrollController();
-  double _fontSize = 22.0;
+  double _fontSize = 24.0;
   bool _showStickyBar = false;
   int? _selectedAyah;
   final Map<int, GlobalKey> _ayahKeys = {};
@@ -83,7 +133,6 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
   Widget build(BuildContext context) {
     final surahAsync = ref.watch(surahDetailsProvider(widget.surahNumber));
 
-    // Auto-scroll when playing ayah changes
     ref.listen<({int surah, int ayah})?>(currentlyPlayingAyahProvider,
         (prev, next) {
       if (next != null &&
@@ -95,31 +144,33 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: _cream,
+        backgroundColor: _bg,
         body: surahAsync.when(
           loading: () => const Center(
               child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
           error: (e, _) =>
-              Center(child: Text('$e', style: const TextStyle(color: _inkMid))),
+              Center(child: Text('$e', style: const TextStyle(color: _creamMid))),
           data: (data) => Stack(
             children: [
-              // ── Main scroll area ──────────────────────────────
+              // ── Islamic background pattern ────────────────────────
+              Positioned.fill(
+                child: CustomPaint(painter: _IslamicPatternPainter()),
+              ),
+
+              // ── Main scroll area ──────────────────────────────────
               CustomScrollView(
                 controller: _scrollController,
                 slivers: [
-                  // Surah header (collapses on scroll)
                   SliverToBoxAdapter(
                     child: _SurahHeader(
                       surah: data.surah,
                       onBack: () => Navigator.pop(context),
                     ),
                   ),
-                  // Basmala (except Al-Fatiha and At-Tawba)
                   if (data.surah.number != 1 && data.surah.number != 9)
                     const SliverToBoxAdapter(child: _Basmala()),
-                  // Ayah list
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (_, i) {
@@ -139,7 +190,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                 ],
               ),
 
-              // ── Reading progress bar (top) ─────────────────────
+              // ── Reading progress bar ──────────────────────────────
               Positioned(
                 top: 0,
                 left: 0,
@@ -163,7 +214,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                 ),
               ),
 
-              // ── Sticky bar (appears after scrolling past header) ─
+              // ── Sticky bar ────────────────────────────────────────
               AnimatedSlide(
                 offset: _showStickyBar ? Offset.zero : const Offset(0, -1),
                 duration: const Duration(milliseconds: 260),
@@ -186,7 +237,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                 ),
               ),
 
-              // ── Mini audio player (bottom) ─────────────────────
+              // ── Mini audio player ─────────────────────────────────
               const Positioned(
                 left: 0,
                 right: 0,
@@ -210,7 +261,7 @@ class _SurahHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _green,
+      color: _header,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -230,13 +281,12 @@ class _SurahHeader extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  // Juz indicator
                   Text(
                     '${ArabicUtils.toArabicNumerals(surah.number)} :',
                     style: TextStyle(
                       fontFamily: 'NotoNaskhArabic',
                       fontSize: 12,
-                      color: _gold.withAlpha(160),
+                      color: _gold.withAlpha(130),
                     ),
                   ),
                 ],
@@ -247,7 +297,7 @@ class _SurahHeader extends StatelessWidget {
               surah.nameArabic,
               style: const TextStyle(
                 fontFamily: 'AmiriQuran',
-                fontSize: 32,
+                fontSize: 34,
                 color: _gold,
                 height: 1.5,
               ),
@@ -258,8 +308,8 @@ class _SurahHeader extends StatelessWidget {
               surah.nameTransliteration,
               style: TextStyle(
                 fontSize: 12,
-                color: _gold.withAlpha(150),
-                letterSpacing: 1.2,
+                color: _creamMid.withAlpha(180),
+                letterSpacing: 1.4,
               ),
             ),
             const SizedBox(height: 10),
@@ -277,29 +327,29 @@ class _SurahHeader extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            // Decorative gold divider
+            const SizedBox(height: 12),
+            // Gold divider
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Row(
                 children: [
                   Expanded(
-                      child: Container(height: 1, color: _gold.withAlpha(80))),
+                      child: Container(height: 0.8, color: _goldDim.withAlpha(120))),
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
                     width: 5,
                     height: 5,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _gold.withAlpha(130),
+                      color: _gold.withAlpha(180),
                     ),
                   ),
                   Expanded(
-                      child: Container(height: 1, color: _gold.withAlpha(80))),
+                      child: Container(height: 0.8, color: _goldDim.withAlpha(120))),
                 ],
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
           ],
         ),
       ),
@@ -314,11 +364,11 @@ class _HeaderPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: _gold.withAlpha(30),
-        border: Border.all(color: _gold.withAlpha(80), width: 1),
+        color: _gold.withAlpha(18),
+        border: Border.all(color: _goldDim.withAlpha(120), width: 1),
       ),
       child: Text(
         label,
@@ -332,27 +382,61 @@ class _HeaderPill extends StatelessWidget {
   }
 }
 
-// ─── Basmala ───────────────────────────────────────────────────────────────────
+// ─── Basmala card ──────────────────────────────────────────────────────────────
 class _Basmala extends StatelessWidget {
   const _Basmala();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-      child: Text(
-        'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.rtl,
-        locale: const Locale('ar'),
-        style: const TextStyle(
-          fontFamily: 'AmiriQuran',
-          fontSize: 26,
-          color: _green,
-          height: 2.0,
-          fontFeatures: [
-            FontFeature.enable('calt'),
-            FontFeature.enable('liga'),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _goldDim.withAlpha(100), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Inner decorative border
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: _goldDim.withAlpha(50), width: 0.5),
+                  ),
+                ),
+              ),
+            ),
+            // Basmala text
+            const Text(
+              'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              locale: Locale('ar'),
+              style: TextStyle(
+                fontFamily: 'AmiriQuran',
+                fontSize: 26,
+                color: _gold,
+                height: 2.0,
+                fontFeatures: [
+                  FontFeature.enable('calt'),
+                  FontFeature.enable('liga'),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -391,30 +475,48 @@ class _AyahTile extends ConsumerWidget {
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           color: isPlaying
-              ? _gold.withAlpha(22)
+              ? _gold.withAlpha(18)
               : isSelected
-                  ? _parchment
+                  ? _surface
                   : Colors.transparent,
-          border: isPlaying
-              ? Border(left: BorderSide(color: _gold, width: 3))
-              : isSelected
-                  ? Border.all(color: _gold.withAlpha(60), width: 0.5)
-                  : null,
+          border: Border(
+            left: BorderSide(
+              color: isPlaying ? _gold : Colors.transparent,
+              width: 3,
+            ),
+            top: BorderSide(
+              color: isSelected || isPlaying
+                  ? _goldDim.withAlpha(60)
+                  : Colors.transparent,
+              width: 0.5,
+            ),
+            right: BorderSide(
+              color: isSelected || isPlaying
+                  ? _goldDim.withAlpha(60)
+                  : Colors.transparent,
+              width: 0.5,
+            ),
+            bottom: BorderSide(
+              color: isSelected || isPlaying
+                  ? _goldDim.withAlpha(60)
+                  : Colors.transparent,
+              width: 0.5,
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+              padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 textDirection: TextDirection.rtl,
                 children: [
-                  // Ayah text (RTL, takes most space)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 4),
@@ -427,7 +529,7 @@ class _AyahTile extends ConsumerWidget {
                           fontFamily: 'AmiriQuran',
                           fontSize: fontSize,
                           height: 2.2,
-                          color: isPlaying ? _green : _ink,
+                          color: isPlaying ? _gold : _cream,
                           fontFeatures: const [
                             FontFeature.enable('calt'),
                             FontFeature.enable('liga'),
@@ -437,7 +539,7 @@ class _AyahTile extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Ayah number badge
+                  // Circular ayah badge
                   Padding(
                     padding: const EdgeInsets.only(top: 4, left: 6),
                     child: _AyahBadge(
@@ -470,14 +572,14 @@ class _AyahBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        color: isPlaying ? _gold.withAlpha(40) : _gold.withAlpha(18),
+        shape: BoxShape.circle,
+        color: isPlaying ? _gold.withAlpha(30) : _surface,
         border: Border.all(
-          color: isPlaying ? _gold : _gold.withAlpha(100),
-          width: 1,
+          color: isPlaying ? _gold : _goldDim.withAlpha(150),
+          width: 1.2,
         ),
       ),
       child: Center(
@@ -486,7 +588,7 @@ class _AyahBadge extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'AmiriQuran',
             fontSize: 11,
-            color: isPlaying ? _green : _gold,
+            color: isPlaying ? _gold : _creamMid,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -512,7 +614,7 @@ class _AyahActions extends ConsumerWidget {
         .any((b) => b.referenceId == 'a_${ayah.surahNumber}_${ayah.ayahNumber}');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -520,7 +622,7 @@ class _AyahActions extends ConsumerWidget {
           _ActionChip(
             icon: isThisPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
             label: isThisPlaying ? 'إيقاف' : 'تشغيل',
-            color: _green,
+            color: _gold,
             onTap: () {
               if (isThisPlaying) {
                 ref.read(audioServiceProvider.notifier).pause();
@@ -537,7 +639,7 @@ class _AyahActions extends ConsumerWidget {
           _ActionChip(
             icon: Icons.menu_book_outlined,
             label: 'تفسير',
-            color: _inkMid,
+            color: _creamMid,
             onTap: () => showTafsirSheet(
               context,
               surahNumber: ayah.surahNumber,
@@ -552,7 +654,7 @@ class _AyahActions extends ConsumerWidget {
                 ? Icons.bookmark_rounded
                 : Icons.bookmark_outline_rounded,
             label: 'حفظ',
-            color: isBookmarked ? _gold : _inkLight,
+            color: isBookmarked ? _gold : _creamDim,
             onTap: () async {
               final dao = ref.read(appDatabaseProvider).bookmarksDao;
               final key = 'a_${ayah.surahNumber}_${ayah.ayahNumber}';
@@ -591,11 +693,11 @@ class _ActionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: color.withAlpha(20),
-          border: Border.all(color: color.withAlpha(80), width: 0.8),
+          color: color.withAlpha(18),
+          border: Border.all(color: color.withAlpha(70), width: 0.8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -617,7 +719,7 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// ─── Sticky top bar (appears after scrolling) ──────────────────────────────────
+// ─── Sticky top bar ────────────────────────────────────────────────────────────
 class _StickyBar extends StatelessWidget {
   final Surah surah;
   final double fontSize;
@@ -636,7 +738,7 @@ class _StickyBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _green,
+      color: _header,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -670,13 +772,12 @@ class _StickyBar extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // Font size controls
                   InkWell(
                     onTap: onFontDecrease,
                     child: const Padding(
                       padding: EdgeInsets.all(8),
                       child: Icon(Icons.text_decrease,
-                          color: Colors.white70, size: 18),
+                          color: _creamMid, size: 18),
                     ),
                   ),
                   Padding(
@@ -684,7 +785,9 @@ class _StickyBar extends StatelessWidget {
                     child: Text(
                       '${fontSize.round()}',
                       style: const TextStyle(
-                          color: _gold, fontSize: 12, fontWeight: FontWeight.w600),
+                          color: _gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                   InkWell(
@@ -692,13 +795,13 @@ class _StickyBar extends StatelessWidget {
                     child: const Padding(
                       padding: EdgeInsets.all(8),
                       child: Icon(Icons.text_increase,
-                          color: Colors.white70, size: 18),
+                          color: _creamMid, size: 18),
                     ),
                   ),
                 ],
               ),
             ),
-            Container(height: 1, color: _gold.withAlpha(60)),
+            Container(height: 1, color: _goldDim.withAlpha(80)),
           ],
         ),
       ),
@@ -717,13 +820,13 @@ class _MiniPlayer extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: _green,
-        border: Border(top: BorderSide(color: _gold.withAlpha(80), width: 1)),
+        color: _header,
+        border: Border(top: BorderSide(color: _goldDim.withAlpha(100), width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(50),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
+            color: Colors.black.withAlpha(80),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -733,13 +836,12 @@ class _MiniPlayer extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
-              // Progress ring
               SizedBox(
                 width: 32,
                 height: 32,
                 child: CircularProgressIndicator(
                   value: state.isLoading ? null : state.progress,
-                  backgroundColor: Colors.white24,
+                  backgroundColor: _surface,
                   color: _gold,
                   strokeWidth: 2,
                 ),
@@ -754,7 +856,7 @@ class _MiniPlayer extends ConsumerWidget {
                       'آية ${ArabicUtils.toArabicNumerals(state.ayahNumber)}',
                       style: const TextStyle(
                         fontFamily: 'NotoNaskhArabic',
-                        color: Colors.white,
+                        color: _cream,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -763,7 +865,7 @@ class _MiniPlayer extends ConsumerWidget {
                       _reciterName(state.reciterId),
                       style: TextStyle(
                         fontFamily: 'NotoNaskhArabic',
-                        color: _gold.withAlpha(200),
+                        color: _gold.withAlpha(180),
                         fontSize: 11,
                       ),
                     ),
@@ -795,7 +897,7 @@ class _MiniPlayer extends ConsumerWidget {
               _PlayerBtn(
                 icon: Icons.close,
                 size: 18,
-                color: Colors.white54,
+                color: _creamDim,
                 onTap: () => ref.read(audioServiceProvider.notifier).hide(),
               ),
             ],
@@ -821,7 +923,7 @@ class _PlayerBtn extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.size = 22,
-    this.color = Colors.white70,
+    this.color = _creamMid,
   });
 
   @override
