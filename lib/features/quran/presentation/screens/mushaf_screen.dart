@@ -1,5 +1,6 @@
 import 'dart:math' show sin, pi;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -467,6 +468,28 @@ class _MushafScreenState extends ConsumerState<MushafScreen>
   }
 }
 
+// ─── Shared Dio instance for Mushaf image fetching ────────────────────────────
+final _mushafDio = Dio(BaseOptions(
+  connectTimeout: const Duration(seconds: 20),
+  receiveTimeout: const Duration(seconds: 40),
+  headers: {
+    'User-Agent':
+        'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 QuranApp/1.0',
+    'Accept': 'image/png,image/jpg,image/*,*/*;q=0.8',
+  },
+));
+
+// ─── CDN URL list (tried in order) ────────────────────────────────────────────
+List<String> _pageUrls(int page) {
+  final padded = page.toString().padLeft(3, '0');
+  return [
+    'https://cdn.islamic.network/quran/images/high-resolution/$page.png',
+    '${AppConstants.mushafCdnUrls[0]}/$page.jpg',
+    '${AppConstants.mushafCdnUrls[1]}/page$padded.png',
+    '${AppConstants.mushafCdnUrls[2]}/page-$padded.jpg',
+  ];
+}
+
 // ─── Single Mushaf page (image + frame + shadow) ───────────────────────────────
 class _MushafPage extends StatefulWidget {
   final int pageNumber;
@@ -486,109 +509,124 @@ class _MushafPage extends StatefulWidget {
 }
 
 class _MushafPageState extends State<_MushafPage> {
-  int _cdnIndex = 0;
+  Uint8List? _bytes;
+  bool _loading = true;
+  bool _failed  = false;
 
-  List<String> get _urls {
-    final p = widget.pageNumber;
-    final padded = p.toString().padLeft(3, '0');
-    return [
-      '${AppConstants.mushafCdnUrls[0]}/$p.jpg',         // qurancdn: 1.jpg
-      '${AppConstants.mushafCdnUrls[1]}/page$padded.png', // github: page001.png
-      '${AppConstants.mushafCdnUrls[2]}/page-$padded.jpg', // searchtruth: page-001.jpg
-    ];
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
   }
 
-  void _tryNext() {
-    if (_cdnIndex < _urls.length - 1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _cdnIndex++);
-      });
+  @override
+  void didUpdateWidget(_MushafPage old) {
+    super.didUpdateWidget(old);
+    if (old.pageNumber != widget.pageNumber) {
+      _bytes   = null;
+      _loading = true;
+      _failed  = false;
+      _fetch();
     }
+  }
+
+  Future<void> _fetch() async {
+    final urls = _pageUrls(widget.pageNumber);
+    for (final url in urls) {
+      try {
+        final resp = await _mushafDio.get<List<int>>(
+          url,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (resp.data != null && resp.data!.isNotEmpty && mounted) {
+          setState(() {
+            _bytes   = Uint8List.fromList(resp.data!);
+            _loading = false;
+            _failed  = false;
+          });
+          return;
+        }
+      } catch (_) {
+        // try next CDN
+      }
+    }
+    if (mounted) setState(() { _loading = false; _failed = true; });
+  }
+
+  void _retry() {
+    setState(() { _bytes = null; _loading = true; _failed = false; });
+    _fetch();
   }
 
   @override
   Widget build(BuildContext context) {
-    final mode = widget.mode;
+    final mode   = widget.mode;
     final isDark = mode == MushafMode.dark;
-
-    // Edge shadow intensity based on turn fraction (simulates page peel)
     final turnShadow = sin(widget.turnFraction * pi) * 0.35;
 
-    // Image.network is used instead of CachedNetworkImage to avoid
-    // the disk-cache that permanently stores failure responses.
-    Widget image = Image.network(
-      _urls[_cdnIndex],
-      key: ValueKey('${widget.pageNumber}_$_cdnIndex'),
-      fit: BoxFit.contain,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Shimmer.fromColors(
-          baseColor:
-              isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
-          highlightColor:
-              isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
-          child: Container(color: mode.pageBg),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        if (_cdnIndex < _urls.length - 1) {
-          _tryNext();
-          return Shimmer.fromColors(
-            baseColor:
-                isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
-            highlightColor:
-                isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
-            child: Container(color: mode.pageBg),
-          );
-        }
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.signal_wifi_off_rounded,
-                  size: 56,
-                  color: isDark ? Colors.white24 : mode.gold.withAlpha(100)),
-              const SizedBox(height: 12),
-              Text(
-                'تعذّر تحميل الصفحة\nتحقق من الاتصال بالإنترنت',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'NotoNaskhArabic',
-                  color: isDark ? Colors.white38 : mode.subtext,
-                ),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () => setState(() => _cdnIndex = 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: mode.gold.withAlpha(isDark ? 40 : 25),
-                    border: Border.all(
-                        color: mode.gold.withAlpha(isDark ? 100 : 80),
-                        width: 1),
-                  ),
-                  child: Text(
-                    'إعادة المحاولة',
-                    style: TextStyle(
-                      fontFamily: 'NotoNaskhArabic',
-                      color: mode.gold,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    Widget content;
 
-    if (mode.filter != null) {
-      image = ColorFiltered(colorFilter: mode.filter!, child: image);
+    if (_loading) {
+      content = Shimmer.fromColors(
+        baseColor:
+            isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
+        highlightColor:
+            isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
+        child: Container(color: mode.pageBg),
+      );
+    } else if (_failed || _bytes == null) {
+      content = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.signal_wifi_off_rounded,
+                size: 56,
+                color: isDark ? Colors.white24 : mode.gold.withAlpha(100)),
+            const SizedBox(height: 12),
+            Text(
+              'تعذّر تحميل الصفحة\nتحقق من الاتصال بالإنترنت',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'NotoNaskhArabic',
+                color: isDark ? Colors.white38 : mode.subtext,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _retry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: mode.gold.withAlpha(isDark ? 40 : 25),
+                  border: Border.all(
+                      color: mode.gold.withAlpha(isDark ? 100 : 80),
+                      width: 1),
+                ),
+                child: Text(
+                  'إعادة المحاولة',
+                  style: TextStyle(
+                    fontFamily: 'NotoNaskhArabic',
+                    color: mode.gold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Widget image = Image.memory(
+        _bytes!,
+        fit: BoxFit.contain,
+      );
+      if (mode.filter != null) {
+        image = ColorFiltered(colorFilter: mode.filter!, child: image);
+      }
+      content = image;
     }
 
     return Center(
@@ -598,7 +636,6 @@ class _MushafPageState extends State<_MushafPage> {
           scale: widget.zoom,
           child: Stack(
             children: [
-              // Page with shadow (simulates physical book page)
               Container(
                 decoration: BoxDecoration(
                   color: mode.pageBg,
@@ -617,10 +654,10 @@ class _MushafPageState extends State<_MushafPage> {
                     ),
                   ],
                 ),
-                child: image,
+                child: content,
               ),
 
-              // Spine shadow (left side = binding for RTL Mushaf)
+              // Spine shadow
               if (turnShadow > 0.01)
                 Positioned.fill(
                   child: IgnorePointer(
