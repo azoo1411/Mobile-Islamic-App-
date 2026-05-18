@@ -371,7 +371,7 @@ class _MushafScreenState extends ConsumerState<MushafScreen>
                 // ── Main page reader ──────────────────────────────
                 PageView.builder(
                   controller: _pageCtrl,
-                  reverse: true, // RTL: swipe right = next page
+                  reverse: false, // RTL Mushaf: swipe right-to-left = next page
                   itemCount: 604,
                   onPageChanged: (i) {
                     setState(() {
@@ -573,6 +573,125 @@ class _MushafPage extends ConsumerWidget {
   }
 }
 
+// ─── Surah metadata (name, meccan, ayah count) ────────────────────────────────
+typedef _SurahMeta = ({String name, bool meccan, int count});
+const _surahMeta = <int, _SurahMeta>{
+  1:  (name:'الفاتحة',     meccan:true,  count:7),
+  2:  (name:'البقرة',      meccan:false, count:286),
+  3:  (name:'آل عمران',   meccan:false, count:200),
+  4:  (name:'النساء',      meccan:false, count:176),
+  5:  (name:'المائدة',     meccan:false, count:120),
+  6:  (name:'الأنعام',     meccan:true,  count:165),
+  7:  (name:'الأعراف',     meccan:true,  count:206),
+  8:  (name:'الأنفال',     meccan:false, count:75),
+  9:  (name:'التوبة',      meccan:false, count:129),
+  10: (name:'يونس',        meccan:true,  count:109),
+  11: (name:'هود',         meccan:true,  count:123),
+  12: (name:'يوسف',        meccan:true,  count:111),
+  13: (name:'الرعد',       meccan:false, count:43),
+  14: (name:'إبراهيم',     meccan:true,  count:52),
+  15: (name:'الحجر',       meccan:true,  count:99),
+  16: (name:'النحل',       meccan:true,  count:128),
+  17: (name:'الإسراء',     meccan:true,  count:111),
+  18: (name:'الكهف',       meccan:true,  count:110),
+  19: (name:'مريم',        meccan:true,  count:98),
+  20: (name:'طه',          meccan:true,  count:135),
+  21: (name:'الأنبياء',    meccan:true,  count:112),
+  22: (name:'الحج',        meccan:false, count:78),
+  23: (name:'المؤمنون',    meccan:true,  count:118),
+  24: (name:'النور',       meccan:false, count:64),
+  25: (name:'الفرقان',     meccan:true,  count:77),
+  26: (name:'الشعراء',     meccan:true,  count:227),
+  27: (name:'النمل',       meccan:true,  count:93),
+  28: (name:'القصص',       meccan:true,  count:88),
+  29: (name:'العنكبوت',    meccan:true,  count:69),
+  30: (name:'الروم',       meccan:true,  count:60),
+  31: (name:'لقمان',       meccan:true,  count:34),
+  32: (name:'السجدة',      meccan:true,  count:30),
+  33: (name:'الأحزاب',     meccan:false, count:73),
+  34: (name:'سبأ',         meccan:true,  count:54),
+  35: (name:'فاطر',        meccan:true,  count:45),
+  36: (name:'يس',          meccan:true,  count:83),
+  37: (name:'الصافات',     meccan:true,  count:182),
+  38: (name:'ص',           meccan:true,  count:88),
+  39: (name:'الزمر',       meccan:true,  count:75),
+  40: (name:'غافر',        meccan:true,  count:85),
+  41: (name:'فصلت',        meccan:true,  count:54),
+  42: (name:'الشورى',      meccan:true,  count:53),
+  43: (name:'الزخرف',      meccan:true,  count:89),
+  44: (name:'الدخان',      meccan:true,  count:59),
+  45: (name:'الجاثية',     meccan:true,  count:37),
+  46: (name:'الأحقاف',     meccan:true,  count:35),
+  47: (name:'محمد',        meccan:false, count:38),
+  48: (name:'الفتح',       meccan:false, count:29),
+  49: (name:'الحجرات',     meccan:false, count:18),
+  50: (name:'ق',           meccan:true,  count:45),
+  51: (name:'الذاريات',    meccan:true,  count:60),
+  52: (name:'الطور',       meccan:true,  count:49),
+  53: (name:'النجم',       meccan:true,  count:62),
+  54: (name:'القمر',       meccan:true,  count:55),
+  55: (name:'الرحمن',      meccan:false, count:78),
+  56: (name:'الواقعة',     meccan:true,  count:96),
+  57: (name:'الحديد',      meccan:false, count:29),
+  58: (name:'المجادلة',    meccan:false, count:22),
+  59: (name:'الحشر',       meccan:false, count:24),
+  60: (name:'الممتحنة',    meccan:false, count:13),
+  61: (name:'الصف',        meccan:false, count:14),
+  62: (name:'الجمعة',      meccan:false, count:11),
+  63: (name:'المنافقون',   meccan:false, count:11),
+  64: (name:'التغابن',     meccan:false, count:18),
+  65: (name:'الطلاق',      meccan:false, count:12),
+  66: (name:'التحريم',     meccan:false, count:12),
+  67: (name:'الملك',       meccan:true,  count:30),
+  68: (name:'القلم',       meccan:true,  count:52),
+  69: (name:'الحاقة',      meccan:true,  count:52),
+  70: (name:'المعارج',     meccan:true,  count:44),
+  71: (name:'نوح',         meccan:true,  count:28),
+  72: (name:'الجن',        meccan:true,  count:28),
+  73: (name:'المزمل',      meccan:true,  count:20),
+  74: (name:'المدثر',      meccan:true,  count:56),
+  75: (name:'القيامة',     meccan:true,  count:40),
+  76: (name:'الإنسان',     meccan:false, count:31),
+  77: (name:'المرسلات',    meccan:true,  count:50),
+  78: (name:'النبأ',       meccan:true,  count:40),
+  79: (name:'النازعات',    meccan:true,  count:46),
+  80: (name:'عبس',         meccan:true,  count:42),
+  81: (name:'التكوير',     meccan:true,  count:29),
+  82: (name:'الانفطار',    meccan:true,  count:19),
+  83: (name:'المطففين',    meccan:true,  count:36),
+  84: (name:'الانشقاق',    meccan:true,  count:25),
+  85: (name:'البروج',      meccan:true,  count:22),
+  86: (name:'الطارق',      meccan:true,  count:17),
+  87: (name:'الأعلى',      meccan:true,  count:19),
+  88: (name:'الغاشية',     meccan:true,  count:26),
+  89: (name:'الفجر',       meccan:true,  count:30),
+  90: (name:'البلد',       meccan:true,  count:20),
+  91: (name:'الشمس',       meccan:true,  count:15),
+  92: (name:'الليل',       meccan:true,  count:21),
+  93: (name:'الضحى',       meccan:true,  count:11),
+  94: (name:'الشرح',       meccan:true,  count:8),
+  95: (name:'التين',       meccan:true,  count:8),
+  96: (name:'العلق',       meccan:true,  count:19),
+  97: (name:'القدر',       meccan:true,  count:5),
+  98: (name:'البينة',      meccan:false, count:8),
+  99: (name:'الزلزلة',     meccan:false, count:8),
+  100:(name:'العاديات',    meccan:true,  count:11),
+  101:(name:'القارعة',     meccan:true,  count:11),
+  102:(name:'التكاثر',     meccan:true,  count:8),
+  103:(name:'العصر',       meccan:true,  count:3),
+  104:(name:'الهمزة',      meccan:true,  count:9),
+  105:(name:'الفيل',       meccan:true,  count:5),
+  106:(name:'قريش',        meccan:true,  count:4),
+  107:(name:'الماعون',     meccan:true,  count:7),
+  108:(name:'الكوثر',      meccan:true,  count:3),
+  109:(name:'الكافرون',    meccan:true,  count:6),
+  110:(name:'النصر',       meccan:false, count:3),
+  111:(name:'المسد',       meccan:true,  count:5),
+  112:(name:'الإخلاص',     meccan:true,  count:4),
+  113:(name:'الفلق',       meccan:true,  count:5),
+  114:(name:'الناس',       meccan:true,  count:6),
+};
+
 // ─── Page content: renders Quran text from local database ─────────────────────
 class _PageContent extends StatelessWidget {
   final int pageNumber;
@@ -589,143 +708,225 @@ class _PageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     if (ayahs.isEmpty) {
       return SizedBox(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.82,
         child: Center(
-          child: Text('صفحة ${ArabicUtils.toArabicNumerals(pageNumber)}',
-              style: TextStyle(
-                  fontFamily: 'AmiriQuran', color: mode.subtext, fontSize: 18)),
+          child: Text(
+            ArabicUtils.toArabicNumerals(pageNumber),
+            style: TextStyle(
+                fontFamily: 'AmiriQuran', color: mode.subtext, fontSize: 24),
+          ),
         ),
       );
     }
 
-    // Group ayahs by surah to detect surah boundaries on this page
+    final juz = ayahs.first.juzNumber;
+    final firstSurah = ayahs.first.surahNumber;
+    final meta = _surahMeta[firstSurah];
+
+    // Group ayahs by surah
     final surahGroups = <int, List<Ayah>>{};
     for (final a in ayahs) {
       surahGroups.putIfAbsent(a.surahNumber, () => []).add(a);
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Build section per surah present on this page
-          for (final entry in surahGroups.entries) ...[
-            // Surah header (only if this page starts the surah, i.e. ayah 1 is here)
-            if (entry.value.first.ayahNumber == 1)
-              _SurahHeader(surahNumber: entry.key, mode: mode),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Top Mushaf page header (like real Mushaf) ─────────────
+        _PageTopBar(
+          surahName: meta?.name ?? '',
+          juz: juz,
+          mode: mode,
+        ),
+        Container(height: 0.6, color: mode.gold.withAlpha(100)),
 
-            // Basmala (for all surahs except Al-Fatiha (1) and At-Tawba (9),
-            // only shown when ayah 1 is on this page)
-            if (entry.value.first.ayahNumber == 1 &&
-                entry.key != 1 &&
-                entry.key != 9)
-              _BasmalaLine(mode: mode),
-
-            // Ayah text block
-            _AyahBlock(ayahs: entry.value, mode: mode),
-
-            if (entry.key != surahGroups.keys.last) const SizedBox(height: 10),
-          ],
-
-          const Spacer(),
-
-          // Page number at bottom center
-          Center(
-            child: Text(
-              '— ${ArabicUtils.toArabicNumerals(pageNumber)} —',
-              style: TextStyle(
-                fontFamily: 'AmiriQuran',
-                fontSize: 13,
-                color: mode.gold.withAlpha(180),
-                letterSpacing: 2,
+        // ── Content area ──────────────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final entry in surahGroups.entries) ...[
+                    if (entry.value.first.ayahNumber == 1)
+                      _SurahBand(surahNumber: entry.key, mode: mode),
+                    if (entry.value.first.ayahNumber == 1 &&
+                        entry.key != 1 &&
+                        entry.key != 9)
+                      _BasmalaLine(mode: mode),
+                    _AyahBlock(ayahs: entry.value, mode: mode),
+                    if (entry.key != surahGroups.keys.last)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Container(
+                            height: 0.5,
+                            color: mode.gold.withAlpha(60)),
+                      ),
+                  ],
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 6),
+        ),
+
+        // ── Bottom: page number ───────────────────────────────────
+        Container(height: 0.6, color: mode.gold.withAlpha(100)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Center(
+            child: Text(
+              ArabicUtils.toArabicNumerals(pageNumber),
+              style: TextStyle(
+                fontFamily: 'AmiriQuran',
+                fontSize: 14,
+                color: mode.gold.withAlpha(200),
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Top bar inside each Mushaf page ──────────────────────────────────────────
+class _PageTopBar extends StatelessWidget {
+  final String surahName;
+  final int juz;
+  final MushafMode mode;
+  const _PageTopBar(
+      {required this.surahName, required this.juz, required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'الجزء ${ArabicUtils.toArabicNumerals(juz)}',
+            style: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              fontSize: 11,
+              color: mode.subtext,
+            ),
+          ),
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: mode.gold.withAlpha(140),
+            ),
+          ),
+          Text(
+            surahName.isNotEmpty ? 'سورة $surahName' : '',
+            style: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              fontSize: 11,
+              color: mode.subtext,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SurahHeader extends StatelessWidget {
+// ─── Decorative surah header band ─────────────────────────────────────────────
+class _SurahBand extends StatelessWidget {
   final int surahNumber;
   final MushafMode mode;
-  const _SurahHeader({required this.surahNumber, required this.mode});
-
-  static const _names = <int, String>{
-    1: 'الفاتحة', 2: 'البقرة', 3: 'آل عمران', 4: 'النساء', 5: 'المائدة',
-    6: 'الأنعام', 7: 'الأعراف', 8: 'الأنفال', 9: 'التوبة', 10: 'يونس',
-    11: 'هود', 12: 'يوسف', 13: 'الرعد', 14: 'إبراهيم', 15: 'الحجر',
-    16: 'النحل', 17: 'الإسراء', 18: 'الكهف', 19: 'مريم', 20: 'طه',
-    21: 'الأنبياء', 22: 'الحج', 23: 'المؤمنون', 24: 'النور', 25: 'الفرقان',
-    26: 'الشعراء', 27: 'النمل', 28: 'القصص', 29: 'العنكبوت', 30: 'الروم',
-    31: 'لقمان', 32: 'السجدة', 33: 'الأحزاب', 34: 'سبأ', 35: 'فاطر',
-    36: 'يس', 37: 'الصافات', 38: 'ص', 39: 'الزمر', 40: 'غافر',
-    41: 'فصلت', 42: 'الشورى', 43: 'الزخرف', 44: 'الدخان', 45: 'الجاثية',
-    46: 'الأحقاف', 47: 'محمد', 48: 'الفتح', 49: 'الحجرات', 50: 'ق',
-    51: 'الذاريات', 52: 'الطور', 53: 'النجم', 54: 'القمر', 55: 'الرحمن',
-    56: 'الواقعة', 57: 'الحديد', 58: 'المجادلة', 59: 'الحشر', 60: 'الممتحنة',
-    61: 'الصف', 62: 'الجمعة', 63: 'المنافقون', 64: 'التغابن', 65: 'الطلاق',
-    66: 'التحريم', 67: 'الملك', 68: 'القلم', 69: 'الحاقة', 70: 'المعارج',
-    71: 'نوح', 72: 'الجن', 73: 'المزمل', 74: 'المدثر', 75: 'القيامة',
-    76: 'الإنسان', 77: 'المرسلات', 78: 'النبأ', 79: 'النازعات', 80: 'عبس',
-    81: 'التكوير', 82: 'الانفطار', 83: 'المطففين', 84: 'الانشقاق', 85: 'البروج',
-    86: 'الطارق', 87: 'الأعلى', 88: 'الغاشية', 89: 'الفجر', 90: 'البلد',
-    91: 'الشمس', 92: 'الليل', 93: 'الضحى', 94: 'الشرح', 95: 'التين',
-    96: 'العلق', 97: 'القدر', 98: 'البينة', 99: 'الزلزلة', 100: 'العاديات',
-    101: 'القارعة', 102: 'التكاثر', 103: 'العصر', 104: 'الهمزة', 105: 'الفيل',
-    106: 'قريش', 107: 'الماعون', 108: 'الكوثر', 109: 'الكافرون', 110: 'النصر',
-    111: 'المسد', 112: 'الإخلاص', 113: 'الفلق', 114: 'الناس',
-  };
+  const _SurahBand({required this.surahNumber, required this.mode});
 
   @override
   Widget build(BuildContext context) {
-    final name = _names[surahNumber] ?? 'سورة $surahNumber';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: mode.gold.withAlpha(120), width: 0.8),
-            bottom: BorderSide(color: mode.gold.withAlpha(120), width: 0.8),
-          ),
+    final meta = _surahMeta[surahNumber];
+    final name = meta?.name ?? '$surahNumber';
+    final type = (meta?.meccan ?? true) ? 'مكية' : 'مدنية';
+    final count = meta?.count ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: mode.gold.withAlpha(12),
+        border: Border(
+          top: BorderSide(color: mode.gold.withAlpha(160), width: 1.2),
+          bottom: BorderSide(color: mode.gold.withAlpha(160), width: 1.2),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _diamond(mode),
-            const SizedBox(width: 10),
-            Text(
-              'سورة $name',
-              style: TextStyle(
-                fontFamily: 'AmiriQuran',
-                fontSize: 18,
-                color: mode.text,
-                height: 1.5,
-              ),
-              locale: const Locale('ar'),
+      ),
+      child: Column(
+        children: [
+          // Decorative dots row
+          _OrnamentRow(mode: mode),
+          const SizedBox(height: 4),
+          // Surah name
+          Text(
+            'سورة $name',
+            style: TextStyle(
+              fontFamily: 'AmiriQuran',
+              fontSize: 20,
+              color: mode.text,
+              height: 1.6,
             ),
-            const SizedBox(width: 10),
-            _diamond(mode),
-          ],
-        ),
+            locale: const Locale('ar'),
+          ),
+          // Type + ayah count
+          Text(
+            '$type  •  ${ArabicUtils.toArabicNumerals(count)} آية',
+            style: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              fontSize: 11,
+              color: mode.subtext,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          _OrnamentRow(mode: mode),
+        ],
       ),
     );
   }
+}
 
-  Widget _diamond(MushafMode m) => Container(
-        width: 6,
-        height: 6,
+class _OrnamentRow extends StatelessWidget {
+  final MushafMode mode;
+  const _OrnamentRow({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(height: 0.6, width: 60, color: mode.gold.withAlpha(100)),
+        const SizedBox(width: 6),
+        _dot(mode),
+        const SizedBox(width: 4),
+        _dot(mode, large: true),
+        const SizedBox(width: 4),
+        _dot(mode),
+        const SizedBox(width: 6),
+        Container(height: 0.6, width: 60, color: mode.gold.withAlpha(100)),
+      ],
+    );
+  }
+
+  Widget _dot(MushafMode m, {bool large = false}) => Container(
+        width: large ? 5 : 3,
+        height: large ? 5 : 3,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: m.gold.withAlpha(160),
+          color: m.gold.withAlpha(large ? 180 : 120),
         ),
       );
 }
 
+// ─── Basmala ──────────────────────────────────────────────────────────────────
 class _BasmalaLine extends StatelessWidget {
   final MushafMode mode;
   const _BasmalaLine({required this.mode});
@@ -733,7 +934,7 @@ class _BasmalaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
         'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
         textAlign: TextAlign.center,
@@ -741,7 +942,7 @@ class _BasmalaLine extends StatelessWidget {
         locale: const Locale('ar'),
         style: TextStyle(
           fontFamily: 'AmiriQuran',
-          fontSize: 22,
+          fontSize: 21,
           color: mode.gold,
           height: 2.0,
           fontFeatures: const [
@@ -754,6 +955,7 @@ class _BasmalaLine extends StatelessWidget {
   }
 }
 
+// ─── Ayah text block ──────────────────────────────────────────────────────────
 class _AyahBlock extends StatelessWidget {
   final List<Ayah> ayahs;
   final MushafMode mode;
@@ -761,15 +963,13 @@ class _AyahBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build one continuous RichText with inline ayah-end markers
     final spans = <TextSpan>[];
     for (final ayah in ayahs) {
       spans.add(TextSpan(text: '${ayah.textUthmani} '));
-      // Ayah end marker: ۝ + Arabic number
       spans.add(TextSpan(
         text: '۝${ArabicUtils.toArabicNumerals(ayah.ayahNumber)} ',
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           color: mode.gold,
           fontFamily: 'AmiriQuran',
         ),
@@ -780,8 +980,8 @@ class _AyahBlock extends StatelessWidget {
       TextSpan(
         style: TextStyle(
           fontFamily: 'AmiriQuran',
-          fontSize: 20,
-          height: 2.4,
+          fontSize: 19,
+          height: 2.5,
           color: mode.text,
           fontFeatures: const [
             FontFeature.enable('calt'),
