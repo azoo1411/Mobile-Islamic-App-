@@ -1,6 +1,5 @@
 import 'dart:math' show sin, pi;
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,23 +68,6 @@ extension _ModeX on MushafMode {
         MushafMode.light => const Color(0x30000000),
         MushafMode.sepia => const Color(0x28000000),
         MushafMode.dark  => const Color(0x70000000),
-      };
-
-  // Page image color filter
-  ColorFilter? get filter => switch (this) {
-        MushafMode.light => null,
-        MushafMode.sepia => const ColorFilter.matrix([
-            0.393, 0.769, 0.189, 0, 0,
-            0.349, 0.686, 0.168, 0, 0,
-            0.272, 0.534, 0.131, 0, 0,
-            0,     0,     0,     1, 0,
-          ]),
-        MushafMode.dark => const ColorFilter.matrix([
-            -1, 0,  0,  0, 255,
-            0,  -1, 0,  0, 255,
-            0,  0,  -1, 0, 255,
-            0,  0,  0,  1, 0,
-          ]),
       };
 
   IconData get icon => switch (this) {
@@ -468,34 +450,19 @@ class _MushafScreenState extends ConsumerState<MushafScreen>
   }
 }
 
-// ─── Shared Dio instance for Mushaf image fetching ────────────────────────────
-final _mushafDio = Dio(BaseOptions(
-  connectTimeout: const Duration(seconds: 20),
-  receiveTimeout: const Duration(seconds: 40),
-  headers: {
-    'User-Agent':
-        'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 QuranApp/1.0',
-    'Accept': 'image/png,image/jpg,image/*,*/*;q=0.8',
-  },
-));
+// ─── Provider: ayahs for a Mushaf page (from local DB — no internet needed) ───
+final mushafPageAyahsProvider =
+    FutureProvider.family<List<Ayah>, int>((ref, page) async {
+  final db = ref.watch(appDatabaseProvider);
+  return db.quranDao.getAyahsByPage(page);
+});
 
-// ─── CDN URL list (tried in order) ────────────────────────────────────────────
-List<String> _pageUrls(int page) {
-  final padded = page.toString().padLeft(3, '0');
-  return [
-    'https://cdn.islamic.network/quran/images/high-resolution/$page.png',
-    '${AppConstants.mushafCdnUrls[0]}/$page.jpg',
-    '${AppConstants.mushafCdnUrls[1]}/page$padded.png',
-    '${AppConstants.mushafCdnUrls[2]}/page-$padded.jpg',
-  ];
-}
-
-// ─── Single Mushaf page (image + frame + shadow) ───────────────────────────────
-class _MushafPage extends StatefulWidget {
+// ─── Single Mushaf page — rendered from local database ─────────────────────────
+class _MushafPage extends ConsumerWidget {
   final int pageNumber;
   final MushafMode mode;
   final double zoom;
-  final double turnFraction; // 0..0.5
+  final double turnFraction;
 
   const _MushafPage({
     required this.pageNumber,
@@ -505,159 +472,70 @@ class _MushafPage extends StatefulWidget {
   });
 
   @override
-  State<_MushafPage> createState() => _MushafPageState();
-}
-
-class _MushafPageState extends State<_MushafPage> {
-  Uint8List? _bytes;
-  bool _loading = true;
-  bool _failed  = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetch();
-  }
-
-  @override
-  void didUpdateWidget(_MushafPage old) {
-    super.didUpdateWidget(old);
-    if (old.pageNumber != widget.pageNumber) {
-      _bytes   = null;
-      _loading = true;
-      _failed  = false;
-      _fetch();
-    }
-  }
-
-  Future<void> _fetch() async {
-    final urls = _pageUrls(widget.pageNumber);
-    for (final url in urls) {
-      try {
-        final resp = await _mushafDio.get<List<int>>(
-          url,
-          options: Options(responseType: ResponseType.bytes),
-        );
-        if (resp.data != null && resp.data!.isNotEmpty && mounted) {
-          setState(() {
-            _bytes   = Uint8List.fromList(resp.data!);
-            _loading = false;
-            _failed  = false;
-          });
-          return;
-        }
-      } catch (_) {
-        // try next CDN
-      }
-    }
-    if (mounted) setState(() { _loading = false; _failed = true; });
-  }
-
-  void _retry() {
-    setState(() { _bytes = null; _loading = true; _failed = false; });
-    _fetch();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mode   = widget.mode;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ayahsAsync = ref.watch(mushafPageAyahsProvider(pageNumber));
+    final mode = this.mode;
     final isDark = mode == MushafMode.dark;
-    final turnShadow = sin(widget.turnFraction * pi) * 0.35;
-
-    Widget content;
-
-    if (_loading) {
-      content = Shimmer.fromColors(
-        baseColor:
-            isDark ? const Color(0xFF1E2028) : const Color(0xFFEDE8DC),
-        highlightColor:
-            isDark ? const Color(0xFF282C38) : const Color(0xFFF8F5EE),
-        child: Container(color: mode.pageBg),
-      );
-    } else if (_failed || _bytes == null) {
-      content = Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.signal_wifi_off_rounded,
-                size: 56,
-                color: isDark ? Colors.white24 : mode.gold.withAlpha(100)),
-            const SizedBox(height: 12),
-            Text(
-              'تعذّر تحميل الصفحة\nتحقق من الاتصال بالإنترنت',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'NotoNaskhArabic',
-                color: isDark ? Colors.white38 : mode.subtext,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _retry,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: mode.gold.withAlpha(isDark ? 40 : 25),
-                  border: Border.all(
-                      color: mode.gold.withAlpha(isDark ? 100 : 80),
-                      width: 1),
-                ),
-                child: Text(
-                  'إعادة المحاولة',
-                  style: TextStyle(
-                    fontFamily: 'NotoNaskhArabic',
-                    color: mode.gold,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      Widget image = Image.memory(
-        _bytes!,
-        fit: BoxFit.contain,
-      );
-      if (mode.filter != null) {
-        image = ColorFiltered(colorFilter: mode.filter!, child: image);
-      }
-      content = image;
-    }
+    final turnShadow = sin(turnFraction * pi) * 0.35;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Transform.scale(
-          scale: widget.zoom,
+          scale: zoom,
           child: Stack(
             children: [
+              // ── Page card with shadow ─────────────────────────────
               Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: mode.pageBg,
                   boxShadow: [
                     BoxShadow(
                       color: mode.shadowColor,
                       blurRadius: 24,
-                      spreadRadius: 0,
                       offset: const Offset(0, 6),
                     ),
                     BoxShadow(
                       color: mode.shadowColor.withAlpha(60),
                       blurRadius: 8,
-                      spreadRadius: 0,
                       offset: const Offset(2, 2),
                     ),
                   ],
                 ),
-                child: content,
+                child: ayahsAsync.when(
+                  loading: () => Shimmer.fromColors(
+                    baseColor: isDark
+                        ? const Color(0xFF1E2028)
+                        : const Color(0xFFEDE8DC),
+                    highlightColor: isDark
+                        ? const Color(0xFF282C38)
+                        : const Color(0xFFF8F5EE),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.85,
+                      child: Container(color: mode.pageBg),
+                    ),
+                  ),
+                  error: (_, __) => SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.85,
+                    child: Center(
+                      child: Text(
+                        'خطأ في تحميل البيانات',
+                        style: TextStyle(
+                            fontFamily: 'NotoNaskhArabic',
+                            color: mode.subtext),
+                      ),
+                    ),
+                  ),
+                  data: (ayahs) => _PageContent(
+                    pageNumber: pageNumber,
+                    ayahs: ayahs,
+                    mode: mode,
+                  ),
+                ),
               ),
 
-              // Spine shadow
+              // ── Spine shadow (page-turn effect) ───────────────────
               if (turnShadow > 0.01)
                 Positioned.fill(
                   child: IgnorePointer(
@@ -667,8 +545,8 @@ class _MushafPageState extends State<_MushafPage> {
                           begin: Alignment.centerLeft,
                           end: Alignment.center,
                           colors: [
-                            Colors.black.withAlpha(
-                                (turnShadow * 150).round()),
+                            Colors.black
+                                .withAlpha((turnShadow * 150).round()),
                             Colors.transparent,
                           ],
                           stops: const [0.0, 0.25],
@@ -678,7 +556,7 @@ class _MushafPageState extends State<_MushafPage> {
                   ),
                 ),
 
-              // Islamic decorative frame overlay
+              // ── Islamic decorative frame ──────────────────────────
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
@@ -691,6 +569,231 @@ class _MushafPageState extends State<_MushafPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Page content: renders Quran text from local database ─────────────────────
+class _PageContent extends StatelessWidget {
+  final int pageNumber;
+  final List<Ayah> ayahs;
+  final MushafMode mode;
+
+  const _PageContent({
+    required this.pageNumber,
+    required this.ayahs,
+    required this.mode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (ayahs.isEmpty) {
+      return SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: Center(
+          child: Text('صفحة ${ArabicUtils.toArabicNumerals(pageNumber)}',
+              style: TextStyle(
+                  fontFamily: 'AmiriQuran', color: mode.subtext, fontSize: 18)),
+        ),
+      );
+    }
+
+    // Group ayahs by surah to detect surah boundaries on this page
+    final surahGroups = <int, List<Ayah>>{};
+    for (final a in ayahs) {
+      surahGroups.putIfAbsent(a.surahNumber, () => []).add(a);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Build section per surah present on this page
+          for (final entry in surahGroups.entries) ...[
+            // Surah header (only if this page starts the surah, i.e. ayah 1 is here)
+            if (entry.value.first.ayahNumber == 1)
+              _SurahHeader(surahNumber: entry.key, mode: mode),
+
+            // Basmala (for all surahs except Al-Fatiha (1) and At-Tawba (9),
+            // only shown when ayah 1 is on this page)
+            if (entry.value.first.ayahNumber == 1 &&
+                entry.key != 1 &&
+                entry.key != 9)
+              _BasmalaLine(mode: mode),
+
+            // Ayah text block
+            _AyahBlock(ayahs: entry.value, mode: mode),
+
+            if (entry.key != surahGroups.keys.last) const SizedBox(height: 10),
+          ],
+
+          const Spacer(),
+
+          // Page number at bottom center
+          Center(
+            child: Text(
+              '— ${ArabicUtils.toArabicNumerals(pageNumber)} —',
+              style: TextStyle(
+                fontFamily: 'AmiriQuran',
+                fontSize: 13,
+                color: mode.gold.withAlpha(180),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+}
+
+class _SurahHeader extends StatelessWidget {
+  final int surahNumber;
+  final MushafMode mode;
+  const _SurahHeader({required this.surahNumber, required this.mode});
+
+  static const _names = <int, String>{
+    1: 'الفاتحة', 2: 'البقرة', 3: 'آل عمران', 4: 'النساء', 5: 'المائدة',
+    6: 'الأنعام', 7: 'الأعراف', 8: 'الأنفال', 9: 'التوبة', 10: 'يونس',
+    11: 'هود', 12: 'يوسف', 13: 'الرعد', 14: 'إبراهيم', 15: 'الحجر',
+    16: 'النحل', 17: 'الإسراء', 18: 'الكهف', 19: 'مريم', 20: 'طه',
+    21: 'الأنبياء', 22: 'الحج', 23: 'المؤمنون', 24: 'النور', 25: 'الفرقان',
+    26: 'الشعراء', 27: 'النمل', 28: 'القصص', 29: 'العنكبوت', 30: 'الروم',
+    31: 'لقمان', 32: 'السجدة', 33: 'الأحزاب', 34: 'سبأ', 35: 'فاطر',
+    36: 'يس', 37: 'الصافات', 38: 'ص', 39: 'الزمر', 40: 'غافر',
+    41: 'فصلت', 42: 'الشورى', 43: 'الزخرف', 44: 'الدخان', 45: 'الجاثية',
+    46: 'الأحقاف', 47: 'محمد', 48: 'الفتح', 49: 'الحجرات', 50: 'ق',
+    51: 'الذاريات', 52: 'الطور', 53: 'النجم', 54: 'القمر', 55: 'الرحمن',
+    56: 'الواقعة', 57: 'الحديد', 58: 'المجادلة', 59: 'الحشر', 60: 'الممتحنة',
+    61: 'الصف', 62: 'الجمعة', 63: 'المنافقون', 64: 'التغابن', 65: 'الطلاق',
+    66: 'التحريم', 67: 'الملك', 68: 'القلم', 69: 'الحاقة', 70: 'المعارج',
+    71: 'نوح', 72: 'الجن', 73: 'المزمل', 74: 'المدثر', 75: 'القيامة',
+    76: 'الإنسان', 77: 'المرسلات', 78: 'النبأ', 79: 'النازعات', 80: 'عبس',
+    81: 'التكوير', 82: 'الانفطار', 83: 'المطففين', 84: 'الانشقاق', 85: 'البروج',
+    86: 'الطارق', 87: 'الأعلى', 88: 'الغاشية', 89: 'الفجر', 90: 'البلد',
+    91: 'الشمس', 92: 'الليل', 93: 'الضحى', 94: 'الشرح', 95: 'التين',
+    96: 'العلق', 97: 'القدر', 98: 'البينة', 99: 'الزلزلة', 100: 'العاديات',
+    101: 'القارعة', 102: 'التكاثر', 103: 'العصر', 104: 'الهمزة', 105: 'الفيل',
+    106: 'قريش', 107: 'الماعون', 108: 'الكوثر', 109: 'الكافرون', 110: 'النصر',
+    111: 'المسد', 112: 'الإخلاص', 113: 'الفلق', 114: 'الناس',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _names[surahNumber] ?? 'سورة $surahNumber';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: mode.gold.withAlpha(120), width: 0.8),
+            bottom: BorderSide(color: mode.gold.withAlpha(120), width: 0.8),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _diamond(mode),
+            const SizedBox(width: 10),
+            Text(
+              'سورة $name',
+              style: TextStyle(
+                fontFamily: 'AmiriQuran',
+                fontSize: 18,
+                color: mode.text,
+                height: 1.5,
+              ),
+              locale: const Locale('ar'),
+            ),
+            const SizedBox(width: 10),
+            _diamond(mode),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _diamond(MushafMode m) => Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: m.gold.withAlpha(160),
+        ),
+      );
+}
+
+class _BasmalaLine extends StatelessWidget {
+  final MushafMode mode;
+  const _BasmalaLine({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.rtl,
+        locale: const Locale('ar'),
+        style: TextStyle(
+          fontFamily: 'AmiriQuran',
+          fontSize: 22,
+          color: mode.gold,
+          height: 2.0,
+          fontFeatures: const [
+            FontFeature.enable('calt'),
+            FontFeature.enable('liga'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AyahBlock extends StatelessWidget {
+  final List<Ayah> ayahs;
+  final MushafMode mode;
+  const _AyahBlock({required this.ayahs, required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    // Build one continuous RichText with inline ayah-end markers
+    final spans = <TextSpan>[];
+    for (final ayah in ayahs) {
+      spans.add(TextSpan(text: '${ayah.textUthmani} '));
+      // Ayah end marker: ۝ + Arabic number
+      spans.add(TextSpan(
+        text: '۝${ArabicUtils.toArabicNumerals(ayah.ayahNumber)} ',
+        style: TextStyle(
+          fontSize: 14,
+          color: mode.gold,
+          fontFamily: 'AmiriQuran',
+        ),
+      ));
+    }
+
+    return Text.rich(
+      TextSpan(
+        style: TextStyle(
+          fontFamily: 'AmiriQuran',
+          fontSize: 20,
+          height: 2.4,
+          color: mode.text,
+          fontFeatures: const [
+            FontFeature.enable('calt'),
+            FontFeature.enable('liga'),
+            FontFeature.enable('clig'),
+          ],
+        ),
+        children: spans,
+      ),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.justify,
+      locale: const Locale('ar'),
     );
   }
 }
