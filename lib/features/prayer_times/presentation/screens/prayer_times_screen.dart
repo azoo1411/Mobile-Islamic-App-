@@ -190,10 +190,10 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryLight],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+        color: Color(0xFF0D2B1F),
+        image: DecorationImage(
+          image: AssetImage('assets/images/islamic_pattern_bg.png'),
+          fit: BoxFit.cover,
         ),
       ),
       child: SafeArea(
