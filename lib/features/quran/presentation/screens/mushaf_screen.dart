@@ -478,97 +478,102 @@ class _MushafPage extends ConsumerWidget {
     final isDark = mode == MushafMode.dark;
     final turnShadow = sin(turnFraction * pi) * 0.35;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Transform.scale(
-          scale: zoom,
-          child: Stack(
-            children: [
-              // ── Page card with shadow ─────────────────────────────
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: mode.pageBg,
-                  boxShadow: [
-                    BoxShadow(
-                      color: mode.shadowColor,
-                      blurRadius: 24,
-                      offset: const Offset(0, 6),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Cap page width for foldables/tablets — center on wide screens
+        final pageW = constraints.maxWidth.clamp(0.0, 520.0);
+        final pageH = constraints.maxHeight;
+
+        return Center(
+          child: SizedBox(
+            width: pageW,
+            height: pageH,
+            child: Transform.scale(
+              scale: zoom,
+              child: Stack(
+                children: [
+                  // ── Page card with shadow ───────────────────────────
+                  Container(
+                    width: pageW,
+                    height: pageH,
+                    decoration: BoxDecoration(
+                      color: mode.pageBg,
+                      boxShadow: [
+                        BoxShadow(
+                          color: mode.shadowColor,
+                          blurRadius: 24,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: mode.shadowColor.withAlpha(60),
+                          blurRadius: 8,
+                          offset: const Offset(2, 2),
+                        ),
+                      ],
                     ),
-                    BoxShadow(
-                      color: mode.shadowColor.withAlpha(60),
-                      blurRadius: 8,
-                      offset: const Offset(2, 2),
-                    ),
-                  ],
-                ),
-                child: ayahsAsync.when(
-                  loading: () => Shimmer.fromColors(
-                    baseColor: isDark
-                        ? const Color(0xFF1E2028)
-                        : const Color(0xFFEDE8DC),
-                    highlightColor: isDark
-                        ? const Color(0xFF282C38)
-                        : const Color(0xFFF8F5EE),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.85,
-                      child: Container(color: mode.pageBg),
-                    ),
-                  ),
-                  error: (_, __) => SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.85,
-                    child: Center(
-                      child: Text(
-                        'خطأ في تحميل البيانات',
-                        style: TextStyle(
-                            fontFamily: 'NotoNaskhArabic',
-                            color: mode.subtext),
+                    child: ayahsAsync.when(
+                      loading: () => Shimmer.fromColors(
+                        baseColor: isDark
+                            ? const Color(0xFF1E2028)
+                            : const Color(0xFFEDE8DC),
+                        highlightColor: isDark
+                            ? const Color(0xFF282C38)
+                            : const Color(0xFFF8F5EE),
+                        child: Container(color: mode.pageBg),
+                      ),
+                      error: (_, __) => Center(
+                        child: Text(
+                          'خطأ في تحميل البيانات',
+                          style: TextStyle(
+                              fontFamily: 'NotoNaskhArabic',
+                              color: mode.subtext),
+                        ),
+                      ),
+                      data: (ayahs) => _PageContent(
+                        pageNumber: pageNumber,
+                        ayahs: ayahs,
+                        mode: mode,
+                        pageH: pageH,
                       ),
                     ),
                   ),
-                  data: (ayahs) => _PageContent(
-                    pageNumber: pageNumber,
-                    ayahs: ayahs,
-                    mode: mode,
-                  ),
-                ),
-              ),
 
-              // ── Spine shadow (page-turn effect) ───────────────────
-              if (turnShadow > 0.01)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.center,
-                          colors: [
-                            Colors.black
-                                .withAlpha((turnShadow * 150).round()),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.25],
+                  // ── Spine shadow (page-turn effect) ─────────────────
+                  if (turnShadow > 0.01)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.center,
+                              colors: [
+                                Colors.black
+                                    .withAlpha((turnShadow * 150).round()),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.25],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
 
-              // ── Islamic decorative frame ──────────────────────────
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _IslamicFramePainter(
-                        mode.gold.withAlpha(isDark ? 80 : 110)),
+                  // ── Islamic decorative frame ─────────────────────────
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _IslamicFramePainter(
+                            mode.gold.withAlpha(isDark ? 80 : 110)),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -697,24 +702,23 @@ class _PageContent extends StatelessWidget {
   final int pageNumber;
   final List<Ayah> ayahs;
   final MushafMode mode;
+  final double pageH;
 
   const _PageContent({
     required this.pageNumber,
     required this.ayahs,
     required this.mode,
+    required this.pageH,
   });
 
   @override
   Widget build(BuildContext context) {
     if (ayahs.isEmpty) {
-      return SizedBox(
-        height: MediaQuery.of(context).size.height * 0.82,
-        child: Center(
-          child: Text(
-            ArabicUtils.toArabicNumerals(pageNumber),
-            style: TextStyle(
-                fontFamily: 'AmiriQuran', color: mode.subtext, fontSize: 24),
-          ),
+      return Center(
+        child: Text(
+          ArabicUtils.toArabicNumerals(pageNumber),
+          style: TextStyle(
+              fontFamily: 'AmiriQuran', color: mode.subtext, fontSize: 24),
         ),
       );
     }
@@ -723,55 +727,49 @@ class _PageContent extends StatelessWidget {
     final firstSurah = ayahs.first.surahNumber;
     final meta = _surahMeta[firstSurah];
 
-    // Group ayahs by surah
     final surahGroups = <int, List<Ayah>>{};
     for (final a in ayahs) {
       surahGroups.putIfAbsent(a.surahNumber, () => []).add(a);
     }
 
+    // Responsive font size: smaller on tall screens (more content per page)
+    final fontSize = pageH < 700 ? 17.0 : 19.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Top Mushaf page header (like real Mushaf) ─────────────
-        _PageTopBar(
-          surahName: meta?.name ?? '',
-          juz: juz,
-          mode: mode,
-        ),
+        // ── Top page header ────────────────────────────────────────
+        _PageTopBar(surahName: meta?.name ?? '', juz: juz, mode: mode),
         Container(height: 0.6, color: mode.gold.withAlpha(100)),
 
-        // ── Content area ──────────────────────────────────────────
+        // ── Content area (scrollable so nothing is hidden) ─────────
         Expanded(
           child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final entry in surahGroups.entries) ...[
-                    if (entry.value.first.ayahNumber == 1)
-                      _SurahBand(surahNumber: entry.key, mode: mode),
-                    if (entry.value.first.ayahNumber == 1 &&
-                        entry.key != 1 &&
-                        entry.key != 9)
-                      _BasmalaLine(mode: mode),
-                    _AyahBlock(ayahs: entry.value, mode: mode),
-                    if (entry.key != surahGroups.keys.last)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Container(
-                            height: 0.5,
-                            color: mode.gold.withAlpha(60)),
-                      ),
-                  ],
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final entry in surahGroups.entries) ...[
+                  if (entry.value.first.ayahNumber == 1)
+                    _SurahBand(surahNumber: entry.key, mode: mode),
+                  if (entry.value.first.ayahNumber == 1 &&
+                      entry.key != 1 &&
+                      entry.key != 9)
+                    _BasmalaLine(mode: mode),
+                  _AyahBlock(ayahs: entry.value, mode: mode, fontSize: fontSize),
+                  if (entry.key != surahGroups.keys.last)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Container(height: 0.5, color: mode.gold.withAlpha(60)),
+                    ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
 
-        // ── Bottom: page number ───────────────────────────────────
+        // ── Page number ────────────────────────────────────────────
         Container(height: 0.6, color: mode.gold.withAlpha(100)),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
@@ -959,7 +957,12 @@ class _BasmalaLine extends StatelessWidget {
 class _AyahBlock extends StatelessWidget {
   final List<Ayah> ayahs;
   final MushafMode mode;
-  const _AyahBlock({required this.ayahs, required this.mode});
+  final double fontSize;
+  const _AyahBlock({
+    required this.ayahs,
+    required this.mode,
+    this.fontSize = 19,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -969,7 +972,7 @@ class _AyahBlock extends StatelessWidget {
       spans.add(TextSpan(
         text: '۝${ArabicUtils.toArabicNumerals(ayah.ayahNumber)} ',
         style: TextStyle(
-          fontSize: 13,
+          fontSize: fontSize - 6,
           color: mode.gold,
           fontFamily: 'AmiriQuran',
         ),
@@ -980,7 +983,7 @@ class _AyahBlock extends StatelessWidget {
       TextSpan(
         style: TextStyle(
           fontFamily: 'AmiriQuran',
-          fontSize: 19,
+          fontSize: fontSize,
           height: 2.5,
           color: mode.text,
           fontFeatures: const [
@@ -992,7 +995,9 @@ class _AyahBlock extends StatelessWidget {
         children: spans,
       ),
       textDirection: TextDirection.rtl,
-      textAlign: TextAlign.justify,
+      // TextAlign.right preserves Uthmani orthographic spaces correctly
+      // (justify would stretch U+08F0/08F1/08F2 tanwin gaps unnaturally)
+      textAlign: TextAlign.right,
       locale: const Locale('ar'),
     );
   }
