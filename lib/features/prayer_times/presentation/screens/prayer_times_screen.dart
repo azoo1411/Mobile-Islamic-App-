@@ -200,52 +200,12 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'الصلاة القادمة',
-                  style: TextStyle(
-                    fontFamily: 'NotoNaskhArabic',
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                ArabicUtils.prayerName(data.nextPrayerName),
-                style: const TextStyle(
-                  fontFamily: 'NotoNaskhArabic',
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                ArabicUtils.formatPrayerCountdown(_countdown),
-                style: AppTypography.prayerTime.copyWith(
-                  color: AppColors.gold,
-                  fontSize: 48,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'الوقت المتبقي',
-                style: TextStyle(
-                  fontFamily: 'NotoNaskhArabic',
-                  color: Colors.white60,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+          child: Center(
+            child: _NextPrayerCard(
+              prayerName: ArabicUtils.prayerName(data.nextPrayerName),
+              countdown: ArabicUtils.formatPrayerCountdown(_countdown),
+              icon: _prayerIcon(data.nextPrayerName),
+            ),
           ),
         ),
       ),
@@ -492,6 +452,98 @@ class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
       case 'isha':    return Icons.nightlight_round;
       default:        return Icons.access_time;
     }
+  }
+}
+
+// ─── Next Prayer Golden Card ─────────────────────────────────────────────────
+
+class _NextPrayerCard extends StatelessWidget {
+  final String prayerName;
+  final String countdown;
+  final IconData icon;
+
+  const _NextPrayerCard({
+    required this.prayerName,
+    required this.countdown,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFD4AF37), Color(0xFFAA7C11)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, 6)),
+        ],
+        border: Border.all(color: const Color(0xFFF9E596), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'الصلاة القادمة',
+              style: TextStyle(
+                fontFamily: 'NotoNaskhArabic',
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                prayerName,
+                style: const TextStyle(
+                  fontFamily: 'NotoNaskhArabic',
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            countdown,
+            style: const TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              color: Colors.white,
+              fontSize: 38,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'الوقت المتبقي',
+            style: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
