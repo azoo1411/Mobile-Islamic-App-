@@ -29,6 +29,7 @@ import QuranReadingScreen  from './src/screens/QuranReadingScreen';
 import SearchScreen        from './src/screens/SearchScreen';
 import RecitationScreen    from './src/screens/RecitationScreen';
 import SettingsScreen      from './src/screens/SettingsScreen';
+import PrayerTimesScreen   from './src/screens/PrayerTimesScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,10 +55,11 @@ function MainTabs() {
       tabBar={props => <FloatingTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Quran"      component={QuranStack}      />
-      <Tab.Screen name="Search"     component={SearchScreen}    />
-      <Tab.Screen name="Recitation" component={RecitationScreen} />
-      <Tab.Screen name="Settings"   component={SettingsScreen}  />
+      <Tab.Screen name="Quran"      component={QuranStack}       />
+      <Tab.Screen name="Prayer"     component={PrayerTimesScreen} />
+      <Tab.Screen name="Search"     component={SearchScreen}     />
+      <Tab.Screen name="Recitation" component={RecitationScreen}  />
+      <Tab.Screen name="Settings"   component={SettingsScreen}   />
     </Tab.Navigator>
   );
 }

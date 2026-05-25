@@ -10,10 +10,11 @@ import { spacing, borderRadius } from '../design-system/spacing';
 import { shadows } from '../design-system/shadows';
 
 const TAB_ICONS = {
-  Quran:      { active: '📖', inactive: '📖', label: 'القرآن'  },
-  Search:     { active: '🔍', inactive: '🔍', label: 'البحث'   },
-  Recitation: { active: '🎧', inactive: '🎧', label: 'التلاوة' },
-  Settings:   { active: '⚙️', inactive: '⚙️', label: 'الإعدادات'},
+  Quran:      { active: '📖', inactive: '📖', label: 'القرآن'    },
+  Prayer:     { active: '🕌', inactive: '🕌', label: 'الصلاة'    },
+  Search:     { active: '🔍', inactive: '🔍', label: 'البحث'     },
+  Recitation: { active: '🎧', inactive: '🎧', label: 'التلاوة'   },
+  Settings:   { active: '⚙️', inactive: '⚙️', label: 'الإعدادات' },
 };
 
 // Single tab button with scale animation
