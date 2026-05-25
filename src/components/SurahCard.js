@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { useTheme } from '../context/ThemeContext';
 import { fonts, fontSizes } from '../design-system/typography';
 import { spacing, borderRadius } from '../design-system/spacing';
-import { shadows } from '../design-system/shadows';
 
 function toArabicNumerals(n) {
   return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -13,8 +12,8 @@ export default function SurahCard({ surah, onPress }) {
   const { colors } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
-  const onPressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 300, friction: 20 }).start();
-  const onPressOut = () => Animated.spring(scale, { toValue: 1.00, useNativeDriver: true, tension: 300, friction: 20 }).start();
+  const onPressIn  = () => Animated.spring(scale, { toValue: 0.976, useNativeDriver: true, tension: 300, friction: 22 }).start();
+  const onPressOut = () => Animated.spring(scale, { toValue: 1.000, useNativeDriver: true, tension: 300, friction: 22 }).start();
 
   const isMakki = surah.type === 'Meccan';
 
@@ -25,115 +24,87 @@ export default function SurahCard({ surah, onPress }) {
         onPress={onPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.bgCard,
-            borderColor:     colors.border,
-            ...shadows.cardSm(colors.shadowColor),
-          },
-        ]}
+        style={[styles.row, { borderBottomColor: colors.divider }]}
       >
-        {/* Left — number hexagon */}
-        <View style={[styles.numberContainer, { backgroundColor: colors.green + '14', borderColor: colors.green + '30' }]}>
-          <Text style={[styles.numberAr, { color: colors.green }]}>
+        {/* Left — number badge */}
+        <View style={[styles.badge, {
+          backgroundColor: colors.gold + '13',
+          borderColor:     colors.gold + '55',
+        }]}>
+          <Text style={[styles.badgeNum, { color: colors.gold }]}>
             {toArabicNumerals(surah.id)}
           </Text>
         </View>
 
-        {/* Center — names */}
+        {/* Center — English name + meta */}
         <View style={styles.info}>
-          <Text style={[styles.nameEn, { color: colors.textSecondary }]}>
+          <Text style={[styles.nameEn, { color: colors.textSecondary }]} numberOfLines={1}>
             {surah.nameEn}
           </Text>
-          <Text style={[styles.nameMeaning, { color: colors.textTertiary }]}>
-            {surah.nameMeaning}
-          </Text>
-        </View>
-
-        {/* Right — Arabic name + meta */}
-        <View style={styles.right}>
-          <Text style={[styles.nameAr, { color: colors.arabicPrimary }]}>
-            {surah.nameAr}
-          </Text>
           <View style={styles.metaRow}>
-            <View style={[
-              styles.typeChip,
-              {
-                backgroundColor: isMakki ? colors.goldMuted   : colors.greenMuted,
-                borderColor:     isMakki ? colors.gold + '50' : colors.green + '40',
-              },
-            ]}>
+            <View style={[styles.typeChip, {
+              backgroundColor: isMakki ? colors.goldMuted   : colors.greenMuted,
+              borderColor:     isMakki ? colors.gold + '40' : colors.green + '35',
+            }]}>
               <Text style={[styles.typeText, { color: isMakki ? colors.goldDark : colors.green }]}>
                 {surah.typeAr}
               </Text>
             </View>
             <Text style={[styles.verseCount, { color: colors.textTertiary }]}>
-              {surah.verses} آية
+              {toArabicNumerals(surah.verses)} آية
             </Text>
           </View>
         </View>
+
+        {/* Right — Arabic name */}
+        <Text style={[styles.nameAr, { color: colors.arabicPrimary }]}>
+          {surah.nameAr}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    paddingVertical:   spacing.lg,
-    paddingHorizontal: spacing.lg,
-    marginHorizontal:  spacing.lg,
-    marginVertical:    spacing.xs,
-    borderRadius:      borderRadius.xl,
-    borderWidth:       1,
+  row: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingVertical:   spacing.md + 2,
+    paddingHorizontal: spacing.xl,
+    borderBottomWidth: 0.75,
     gap:               spacing.md,
   },
-  numberContainer: {
-    width:          44,
-    height:         44,
+  badge: {
+    width:          40,
+    height:         40,
     borderRadius:   borderRadius.md,
     borderWidth:    1,
     alignItems:     'center',
     justifyContent: 'center',
   },
-  numberAr: {
+  badgeNum: {
     fontFamily: fonts.quranBold,
-    fontSize:   fontSizes.h4,
-    lineHeight: fontSizes.h4 + 4,
+    fontSize:   fontSizes.body,
+    lineHeight: fontSizes.body + 4,
   },
   info: {
     flex: 1,
-    gap:  spacing.xxs,
+    gap:  spacing.xxs + 1,
   },
   nameEn: {
-    fontFamily: fonts.semiBold,
-    fontSize:   fontSizes.body,
-  },
-  nameMeaning: {
-    fontFamily: fonts.regular,
-    fontSize:   fontSizes.caption,
-  },
-  right: {
-    alignItems: 'flex-end',
-    gap:        spacing.xs,
-  },
-  nameAr: {
-    fontFamily:       fonts.quranBold,
-    fontSize:         fontSizes.h4,
-    writingDirection: 'rtl',
-    lineHeight:       fontSizes.h4 + 8,
+    fontFamily:    fonts.semiBold,
+    fontSize:      fontSizes.bodySm,
+    letterSpacing: 0.2,
   },
   metaRow: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    gap:            spacing.xs,
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing.xs,
   },
   typeChip: {
-    borderWidth:       1,
+    borderWidth:       0.75,
     borderRadius:      borderRadius.full,
-    paddingVertical:   1,
+    paddingVertical:   2,
     paddingHorizontal: spacing.sm,
   },
   typeText: {
@@ -142,6 +113,12 @@ const styles = StyleSheet.create({
   },
   verseCount: {
     fontFamily: fonts.regular,
-    fontSize:   fontSizes.caption,
+    fontSize:   fontSizes.micro,
+  },
+  nameAr: {
+    fontFamily:       fonts.quranBold,
+    fontSize:         fontSizes.h4,
+    writingDirection: 'rtl',
+    lineHeight:       fontSizes.h4 + 10,
   },
 });

@@ -12,10 +12,25 @@ import { fonts, fontSizes } from '../design-system/typography';
 import { spacing, borderRadius } from '../design-system/spacing';
 
 const FILTERS = [
-  { key: 'all',    label: 'الكل'    },
-  { key: 'Meccan', label: 'مكية'   },
-  { key: 'Medinan',label: 'مدنية'  },
+  { key: 'all',     label: 'الكل'   },
+  { key: 'Meccan',  label: 'مكية'  },
+  { key: 'Medinan', label: 'مدنية' },
 ];
+
+// Triple-dot ornament divider inside header
+function OrnamentDivider() {
+  return (
+    <View style={styles.ornamentRow}>
+      <View style={styles.ornamentLine} />
+      <View style={styles.ornamentDots}>
+        <View style={[styles.dot, { width: 3.5, height: 3.5, opacity: 0.4 }]} />
+        <View style={[styles.dot, { width: 5.5, height: 5.5, opacity: 0.7 }]} />
+        <View style={[styles.dot, { width: 3.5, height: 3.5, opacity: 0.4 }]} />
+      </View>
+      <View style={styles.ornamentLine} />
+    </View>
+  );
+}
 
 export default function SurahIndexScreen({ navigation }) {
   const { colors, isDark } = useTheme();
@@ -43,25 +58,30 @@ export default function SurahIndexScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* ── Header ─────────────────────────────────────────── */}
       <LinearGradient
-        colors={[colors.surahHeaderStart, colors.surahHeaderEnd]}
+        colors={isDark
+          ? [colors.surahHeaderStart, colors.surahHeaderEnd]
+          : ['#0D2420', '#1B4332']}
         style={[styles.header, { paddingTop: insets.top + spacing.lg }]}
       >
+        {/* Title */}
         <Text style={styles.headerTitle}>القرآن الكريم</Text>
-        <Text style={[styles.headerSub, { color: colors.gold + 'CC' }]}>
-          ١١٤ سورة  •  ٦٢٣٦ آية
+        <Text style={[styles.headerSub, { color: 'rgba(200,169,110,0.75)' }]}>
+          ١١٤ سورة  ·  ٦٢٣٦ آية
         </Text>
 
-        {/* Search bar */}
-        <View style={[styles.searchBar, { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.20)' }]}>
-          <Text style={{ fontSize: 16, marginLeft: spacing.sm, color: 'rgba(255,255,255,0.6)' }}>🔍</Text>
+        <OrnamentDivider />
+
+        {/* Search bar — pill style */}
+        <View style={styles.searchWrap}>
+          <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={[styles.searchInput, { color: '#FFFFFF' }]}
+            style={styles.searchInput}
             placeholder="ابحث عن سورة..."
-            placeholderTextColor="rgba(255,255,255,0.45)"
+            placeholderTextColor="rgba(255,255,255,0.40)"
             value={query}
             onChangeText={setQuery}
             textAlign="right"
@@ -78,14 +98,17 @@ export default function SurahIndexScreen({ navigation }) {
                 key={f.key}
                 style={[
                   styles.filterChip,
-                  {
-                    backgroundColor: active ? colors.gold : 'rgba(255,255,255,0.12)',
-                    borderColor:     active ? colors.gold : 'rgba(255,255,255,0.20)',
-                  },
+                  active
+                    ? styles.filterChipActive
+                    : { backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.18)' },
                 ]}
                 onPress={() => setFilter(f.key)}
+                activeOpacity={0.75}
               >
-                <Text style={[styles.filterText, { color: active ? '#FFFFFF' : 'rgba(255,255,255,0.75)' }]}>
+                <Text style={[
+                  styles.filterText,
+                  { color: active ? '#1B4332' : 'rgba(255,255,255,0.80)' },
+                ]}>
                   {f.label}
                 </Text>
               </TouchableOpacity>
@@ -94,7 +117,7 @@ export default function SurahIndexScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* ── Surah List ─────────────────────────────────────── */}
+      {/* ── Surah list ─────────────────────────────────────── */}
       <FlatList
         data={filtered}
         keyExtractor={s => String(s.id)}
@@ -120,41 +143,76 @@ export default function SurahIndexScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  // ── Header ──────────────────────────────────────────────────
   header: {
     paddingHorizontal: spacing.xxl,
-    paddingBottom:     spacing.xxl,
+    paddingBottom:     spacing.xl,
   },
   headerTitle: {
-    fontFamily:  fonts.quranBold,
-    fontSize:    fontSizes.h1,
-    color:       '#FFFFFF',
-    textAlign:   'center',
+    fontFamily:    fonts.quranBold,
+    fontSize:      fontSizes.h1,
+    color:         '#C8A96E',
+    textAlign:     'center',
     letterSpacing: 2,
-    marginBottom: spacing.xxs,
+    marginBottom:  spacing.xxs,
   },
   headerSub: {
-    fontFamily:  fonts.regular,
-    fontSize:    fontSizes.caption,
-    textAlign:   'center',
-    marginBottom: spacing.xxl,
+    fontFamily:    fonts.regular,
+    fontSize:      fontSizes.caption,
+    textAlign:     'center',
     letterSpacing: 1,
   },
-  searchBar: {
-    flexDirection:   'row-reverse',
-    alignItems:      'center',
-    borderWidth:     1,
-    borderRadius:    borderRadius.xl,
+
+  // ── Ornament ────────────────────────────────────────────────
+  ornamentRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    marginVertical: spacing.lg,
+  },
+  ornamentLine: {
+    flex:            1,
+    height:          0.8,
+    backgroundColor: 'rgba(200,169,110,0.35)',
+  },
+  ornamentDots: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            5,
+    marginHorizontal: 10,
+  },
+  dot: {
+    borderRadius:    20,
+    backgroundColor: '#C8A96E',
+  },
+
+  // ── Search ──────────────────────────────────────────────────
+  searchWrap: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   'rgba(255,255,255,0.11)',
+    borderRadius:      borderRadius.full,
+    borderWidth:       1,
+    borderColor:       'rgba(200,169,110,0.30)',
     paddingHorizontal: spacing.lg,
-    height:          48,
-    marginBottom:    spacing.lg,
+    height:            46,
+    marginBottom:      spacing.lg,
+  },
+  searchIcon: {
+    fontSize:   15,
+    marginLeft: spacing.xs,
+    opacity:    0.7,
   },
   searchInput: {
     flex:        1,
     fontFamily:  fonts.regular,
     fontSize:    fontSizes.body,
+    color:       '#FFFFFF',
     textAlign:   'right',
     marginRight: spacing.sm,
   },
+
+  // ── Filter chips ────────────────────────────────────────────
   filterRow: {
     flexDirection:  'row',
     justifyContent: 'center',
@@ -164,18 +222,24 @@ const styles = StyleSheet.create({
     borderWidth:       1,
     borderRadius:      borderRadius.full,
     paddingVertical:   spacing.xs,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
+  },
+  filterChipActive: {
+    backgroundColor: '#C8A96E',
+    borderColor:     '#C8A96E',
   },
   filterText: {
     fontFamily: fonts.semiBold,
     fontSize:   fontSizes.bodySm,
   },
+
+  // ── List ────────────────────────────────────────────────────
   list: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xs,
   },
   empty: {
-    paddingVertical: spacing['6xl'],
-    alignItems: 'center',
+    paddingVertical: 80,
+    alignItems:      'center',
   },
   emptyText: {
     fontFamily: fonts.regular,
