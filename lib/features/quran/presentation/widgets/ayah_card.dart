@@ -38,7 +38,7 @@ class AyahCard extends ConsumerWidget {
             _buildAyahNumberRow(context, ref, isPlaying),
             const SizedBox(height: 12),
             Text(
-              ayah.textUthmani,
+              ArabicUtils.normalizeQuranDisplay(ayah.textUthmani),
               style: AppTypography.quranAyah.copyWith(
                 fontSize: fontSize,
                 color: isPlaying ? AppColors.primary : AppColors.textQuran,
