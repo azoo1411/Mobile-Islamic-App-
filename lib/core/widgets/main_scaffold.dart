@@ -7,10 +7,11 @@ class MainScaffold extends StatelessWidget {
   const MainScaffold({super.key, required this.child});
 
   static const List<_NavItem> _items = [
-    _NavItem(path: '/home', icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
-    _NavItem(path: '/quran', icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'القرآن'),
-    _NavItem(path: '/prayer', icon: Icons.access_time_outlined, activeIcon: Icons.access_time, label: 'الصلاة'),
-    _NavItem(path: '/poetry', icon: Icons.library_books_outlined, activeIcon: Icons.library_books, label: 'المكتبة'),
+    _NavItem(path: '/home',   icon: Icons.home_outlined,        activeIcon: Icons.home_rounded,        label: 'الرئيسية'),
+    _NavItem(path: '/quran',  icon: Icons.menu_book_outlined,   activeIcon: Icons.menu_book_rounded,   label: 'القرآن'),
+    _NavItem(path: '/adhkar', icon: Icons.spa_outlined,         activeIcon: Icons.spa_rounded,         label: 'الأذكار'),
+    _NavItem(path: '/prayer', icon: Icons.access_time_outlined, activeIcon: Icons.access_time_rounded, label: 'الصلاة'),
+    _NavItem(path: '/poetry', icon: Icons.library_books_outlined, activeIcon: Icons.library_books_rounded, label: 'المكتبة'),
   ];
 
   int _currentIndex(String location) {
@@ -32,13 +33,11 @@ class MainScaffold extends StatelessWidget {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: (i) => context.go(_items[i].path),
-          items: _items
-              .map((item) => BottomNavigationBarItem(
-                    icon: Icon(item.icon),
-                    activeIcon: Icon(item.activeIcon),
-                    label: item.label,
-                  ))
-              .toList(),
+          items: _items.map((item) => BottomNavigationBarItem(
+            icon: Icon(item.icon),
+            activeIcon: Icon(item.activeIcon),
+            label: item.label,
+          )).toList(),
         ),
       ),
     );
@@ -50,11 +49,5 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-
-  const _NavItem({
-    required this.path,
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-  });
+  const _NavItem({required this.path, required this.icon, required this.activeIcon, required this.label});
 }
