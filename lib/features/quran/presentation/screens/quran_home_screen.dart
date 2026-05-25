@@ -12,13 +12,14 @@ import '../providers/quran_provider.dart';
 import 'mushaf_screen.dart';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const _cream     = Color(0xFFFAF8F0);
-const _parchment = Color(0xFFF0EAD6);
-const _ink       = Color(0xFF1A1208);
-const _inkMid    = Color(0xFF5C4A2A);
-const _inkLight  = Color(0xFFAA9070);
-const _gold      = Color(0xFFC8A820);
-const _green     = Color(0xFF1B4D3E);
+const _cream      = Color(0xFFFAF8F0);
+const _parchment  = Color(0xFFF0EAD6);
+const _ink        = Color(0xFF1A1208);
+const _inkMid     = Color(0xFF5C4A2A);
+const _inkLight   = Color(0xFFAA9070);
+const _gold       = Color(0xFFC8A820);
+const _green      = Color(0xFF1B4D3E);
+const _greenDeep  = Color(0xFF0D2420);
 
 // ─── Surah → first Mushaf page map ────────────────────────────────────────────
 const _surahStartPage = <int, int>{
@@ -116,78 +117,114 @@ class _QuranHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _green,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_greenDeep, _green],
+        ),
+      ),
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Open Mushaf icon
-                  InkWell(
+                  _HeaderIconBtn(
+                    icon: Icons.menu_book_rounded,
                     onTap: () => context.push('/quran/mushaf'),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(Icons.menu_book_rounded,
-                          color: _gold.withOpacity(0.85), size: 24),
-                    ),
                   ),
-                  // Title
                   const Text(
                     'القرآن الكريم',
                     style: TextStyle(
                       fontFamily: 'AmiriQuran',
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: _gold,
-                      height: 1.6,
+                      height: 1.5,
                     ),
                   ),
-                  // Search icon
-                  InkWell(
+                  _HeaderIconBtn(
+                    icon: Icons.search_rounded,
                     onTap: () => context.push('/quran/search'),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(Icons.search_rounded,
-                          color: _gold.withOpacity(0.85), size: 24),
-                    ),
                   ),
                 ],
               ),
             ),
-            // Decorative divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(height: 1, color: _gold.withOpacity(0.35)),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _gold.withOpacity(0.6),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(height: 1, color: _gold.withOpacity(0.35)),
-                  ),
-                ],
-              ),
-            ),
+            const _OrnamentDivider(),
           ],
         ),
       ),
     );
   }
+}
+
+class _HeaderIconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _HeaderIconBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _gold.withOpacity(0.22),
+            width: 1,
+          ),
+        ),
+        child: Icon(icon, color: _gold.withOpacity(0.85), size: 20),
+      ),
+    );
+  }
+}
+
+class _OrnamentDivider extends StatelessWidget {
+  const _OrnamentDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(child: Container(height: 0.8, color: _gold.withOpacity(0.3))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _dot(3.5, 0.35),
+                const SizedBox(width: 5),
+                _dot(5.5, 0.65),
+                const SizedBox(width: 5),
+                _dot(3.5, 0.35),
+              ],
+            ),
+          ),
+          Expanded(child: Container(height: 0.8, color: _gold.withOpacity(0.3))),
+        ],
+      ),
+    );
+  }
+
+  Widget _dot(double size, double opacity) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: _gold.withOpacity(opacity),
+    ),
+  );
 }
 
 // ─── Continue reading banner ───────────────────────────────────────────────────
@@ -202,11 +239,16 @@ class _ContinueReadingBanner extends ConsumerWidget {
           onTap: () => context.push('/quran/mushaf?page=$page'),
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: _green.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _green.withOpacity(0.2), width: 1),
+              color: _green.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border(
+                left: BorderSide(color: _gold, width: 3),
+                top: BorderSide(color: _green.withOpacity(0.15), width: 1),
+                right: BorderSide(color: _green.withOpacity(0.15), width: 1),
+                bottom: BorderSide(color: _green.withOpacity(0.15), width: 1),
+              ),
             ),
             child: Row(
               children: [
@@ -224,7 +266,7 @@ class _ContinueReadingBanner extends ConsumerWidget {
                     textDirection: TextDirection.rtl,
                   ),
                 ),
-                Icon(Icons.chevron_left, color: _green.withOpacity(0.6), size: 18),
+                Icon(Icons.chevron_left, color: _green.withOpacity(0.55), size: 18),
               ],
             ),
           ),
@@ -246,38 +288,50 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        textDirection: TextDirection.rtl,
-        style: const TextStyle(
-          fontFamily: 'NotoNaskhArabic',
-          color: _ink,
-          fontSize: 14,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: _ink.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        decoration: InputDecoration(
-          hintText: 'ابحث عن سورة...',
-          hintStyle: TextStyle(
+        child: TextField(
+          controller: controller,
+          onChanged: onChanged,
+          textDirection: TextDirection.rtl,
+          style: const TextStyle(
             fontFamily: 'NotoNaskhArabic',
-            color: _inkLight,
+            color: _ink,
             fontSize: 14,
           ),
-          prefixIcon: Icon(Icons.search, color: _inkLight, size: 20),
-          filled: true,
-          fillColor: _parchment,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: _gold.withOpacity(0.3), width: 1),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: _gold.withOpacity(0.3), width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: _gold.withOpacity(0.7), width: 1.5),
+          decoration: InputDecoration(
+            hintText: 'ابحث عن سورة...',
+            hintStyle: TextStyle(
+              fontFamily: 'NotoNaskhArabic',
+              color: _inkLight,
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(Icons.search, color: _inkLight.withOpacity(0.7), size: 20),
+            filled: true,
+            fillColor: _parchment,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide(color: _gold.withOpacity(0.25), width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide(color: _gold.withOpacity(0.6), width: 1.5),
+            ),
           ),
         ),
       ),
@@ -294,6 +348,7 @@ class _TabRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: _cream,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TabBar(
         controller: controller,
         labelColor: _green,
@@ -301,7 +356,7 @@ class _TabRow extends StatelessWidget {
         indicatorColor: _gold,
         indicatorSize: TabBarIndicatorSize.label,
         indicatorWeight: 2.5,
-        dividerColor: _parchment,
+        dividerColor: Colors.transparent,
         labelStyle: const TextStyle(
           fontFamily: 'NotoNaskhArabic',
           fontSize: 14,
@@ -345,9 +400,15 @@ class _SurahTab extends ConsumerWidget {
                         .contains(query.toLowerCase()))
                 .toList();
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(top: 4, bottom: 100),
+        return ListView.separated(
+          padding: const EdgeInsets.only(top: 6, bottom: 100),
           itemCount: filtered.length,
+          separatorBuilder: (_, __) => Divider(
+            color: _gold.withOpacity(0.1),
+            height: 1,
+            indent: 70,
+            endIndent: 16,
+          ),
           itemBuilder: (_, i) => _SurahRow(surah: filtered[i]),
         );
       },
@@ -370,39 +431,39 @@ class _SurahRow extends StatelessWidget {
       splashColor: _gold.withOpacity(0.08),
       highlightColor: _gold.withOpacity(0.04),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            // Number badge – octagonal look
             _NumberBadge(number: surah.number),
             const SizedBox(width: 14),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     surah.nameTransliteration,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: _inkMid,
-                        height: 1.2),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: _inkMid,
+                      height: 1.2,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                            horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: isMeccan
-                              ? _gold.withOpacity(0.12)
-                              : _green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                              ? _gold.withOpacity(0.1)
+                              : _green.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(5),
                           border: Border.all(
                             color: isMeccan
-                                ? _gold.withOpacity(0.3)
-                                : _green.withOpacity(0.25),
+                                ? _gold.withOpacity(0.28)
+                                : _green.withOpacity(0.22),
                             width: 0.5,
                           ),
                         ),
@@ -418,7 +479,7 @@ class _SurahRow extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${ArabicUtils.toArabicNumerals(surah.ayahCount)} آية',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontFamily: 'NotoNaskhArabic',
                             fontSize: 11,
                             color: _inkLight),
@@ -428,7 +489,6 @@ class _SurahRow extends StatelessWidget {
                 ],
               ),
             ),
-            // Arabic name
             Text(
               surah.nameArabic,
               style: const TextStyle(
@@ -446,7 +506,6 @@ class _SurahRow extends StatelessWidget {
   }
 }
 
-// Octagonal number badge inspired by Mushaf ayah markers
 class _NumberBadge extends StatelessWidget {
   final int number;
   const _NumberBadge({required this.number});
@@ -454,12 +513,12 @@ class _NumberBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 38,
-      height: 38,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: _gold.withOpacity(0.1),
-        border: Border.all(color: _gold.withOpacity(0.55), width: 1),
-        borderRadius: BorderRadius.circular(6),
+        color: _gold.withOpacity(0.08),
+        border: Border.all(color: _gold.withOpacity(0.5), width: 1),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Text(
@@ -493,16 +552,20 @@ class _JuzTab extends StatelessWidget {
         final juz = i + 1;
         return Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             onTap: () {},
             splashColor: _gold.withOpacity(0.12),
             child: Container(
               decoration: BoxDecoration(
-                color: _parchment,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _gold.withOpacity(0.3), width: 1),
+                gradient: const LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [_parchment, Color(0xFFE8DECE)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _gold.withOpacity(0.28), width: 1),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -511,19 +574,19 @@ class _JuzTab extends StatelessWidget {
                     ArabicUtils.toArabicNumerals(juz),
                     style: const TextStyle(
                       fontFamily: 'AmiriQuran',
-                      fontSize: 30,
+                      fontSize: 32,
                       color: _green,
                       fontWeight: FontWeight.w700,
                       height: 1.2,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'الجزء',
                     style: TextStyle(
                       fontFamily: 'NotoNaskhArabic',
                       fontSize: 11,
-                      color: _inkMid,
+                      color: _inkMid.withOpacity(0.8),
                     ),
                   ),
                 ],
@@ -551,20 +614,37 @@ class _BookmarksTab extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.bookmark_outline_rounded,
-                    size: 52, color: _inkLight.withOpacity(0.5)),
-                const SizedBox(height: 14),
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: _gold.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: _gold.withOpacity(0.25), width: 1),
+                  ),
+                  child: Icon(
+                    Icons.bookmark_outline_rounded,
+                    size: 34,
+                    color: _gold.withOpacity(0.55),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text(
                   'لا توجد إشارات مرجعية',
                   style: TextStyle(
-                      fontFamily: 'NotoNaskhArabic',
-                      color: _inkMid,
-                      fontSize: 15),
+                    fontFamily: 'NotoNaskhArabic',
+                    color: _inkMid,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'اضغط 🔖 في المصحف لحفظ صفحة',
-                  style: TextStyle(fontSize: 12, color: _inkLight),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _inkLight.withOpacity(0.8)),
                 ),
               ],
             ),
@@ -604,7 +684,7 @@ class _BookmarksTab extends ConsumerWidget {
                     color: _gold.withOpacity(0.1),
                     border: Border.all(
                         color: _gold.withOpacity(0.45), width: 1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
@@ -667,16 +747,25 @@ class _MushafFab extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/quran/mushaf'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
-          color: _green,
-          border: Border.all(color: _gold.withOpacity(0.5), width: 1),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF22604E), _green],
+          ),
+          border: Border.all(color: _gold.withOpacity(0.45), width: 1),
           boxShadow: [
             BoxShadow(
-              color: _green.withOpacity(0.4),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+              color: _green.withOpacity(0.45),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: _gold.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
