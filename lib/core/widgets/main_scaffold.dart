@@ -6,14 +6,40 @@ class MainScaffold extends StatelessWidget {
 
   const MainScaffold({super.key, required this.child});
 
-  static const _adhkarAsset = 'assets/images/quick_access/adhkar.png';
-
+  // ── كل الأيقونات من نفس المصدر (Material Icons) بنفس الحجم والوزن البصري ──
   static const List<_NavItem> _items = [
-    _NavItem(path: '/home', icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
-    _NavItem(path: '/quran', icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'القرآن'),
-    _NavItem(path: '/adhkar', icon: null, activeIcon: null, label: 'الأذكار', useImage: true),
-    _NavItem(path: '/prayer', icon: Icons.access_time_outlined, activeIcon: Icons.access_time, label: 'الصلاة'),
-    _NavItem(path: '/poetry', icon: Icons.library_books_outlined, activeIcon: Icons.library_books, label: 'المكتبة'),
+    _NavItem(
+      path: '/home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'الرئيسية',
+    ),
+    _NavItem(
+      path: '/quran',
+      icon: Icons.menu_book_outlined,
+      activeIcon: Icons.menu_book_rounded,
+      label: 'القرآن',
+    ),
+    _NavItem(
+      path: '/adhkar',
+      // spa_outlined هو رمز اللوتس — يمثل الروحانية والتأمل
+      // ويأتي من نفس مجموعة Material Icons بنفس الوزن البصري تماماً
+      icon: Icons.spa_outlined,
+      activeIcon: Icons.spa_rounded,
+      label: 'الأذكار',
+    ),
+    _NavItem(
+      path: '/prayer',
+      icon: Icons.access_time_outlined,
+      activeIcon: Icons.access_time_rounded,
+      label: 'الصلاة',
+    ),
+    _NavItem(
+      path: '/poetry',
+      icon: Icons.library_books_outlined,
+      activeIcon: Icons.library_books_rounded,
+      label: 'المكتبة',
+    ),
   ];
 
   int _currentIndex(String location) {
@@ -21,23 +47,6 @@ class MainScaffold extends StatelessWidget {
       if (location.startsWith(_items[i].path)) return i;
     }
     return 0;
-  }
-
-  BottomNavigationBarItem _buildNavItem(_NavItem item, bool isActive) {
-    if (item.useImage) {
-      final color = isActive ? const Color(0xFF1B4D3E) : Colors.grey;
-      final icon = ImageIcon(
-        const AssetImage(_adhkarAsset),
-        size: 26,
-        color: color,
-      );
-      return BottomNavigationBarItem(icon: icon, label: item.label);
-    }
-    return BottomNavigationBarItem(
-      icon: Icon(item.icon),
-      activeIcon: Icon(item.activeIcon),
-      label: item.label,
-    );
   }
 
   @override
@@ -52,10 +61,14 @@ class MainScaffold extends StatelessWidget {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: (i) => context.go(_items[i].path),
-          items: List.generate(
-            _items.length,
-            (i) => _buildNavItem(_items[i], i == currentIndex),
-          ),
+          // الأيقونات تأخذ حجمها ولونها من الـ theme تلقائياً
+          items: _items
+              .map((item) => BottomNavigationBarItem(
+                    icon: Icon(item.icon),
+                    activeIcon: Icon(item.activeIcon),
+                    label: item.label,
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -64,16 +77,14 @@ class MainScaffold extends StatelessWidget {
 
 class _NavItem {
   final String path;
-  final IconData? icon;
-  final IconData? activeIcon;
+  final IconData icon;
+  final IconData activeIcon;
   final String label;
-  final bool useImage;
 
   const _NavItem({
     required this.path,
     required this.icon,
     required this.activeIcon,
     required this.label,
-    this.useImage = false,
   });
 }
