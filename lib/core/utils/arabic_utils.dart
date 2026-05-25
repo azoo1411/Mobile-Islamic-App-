@@ -26,7 +26,7 @@ class ArabicUtils {
   }
 
   // Encapsulate ayah number in Quran-style circle character
-  static String ayahNumber(int number) => '﴿${toArabicNumerals(number)}﴾';
+  static String ayahNumber(int number) => '\u﴿${toArabicNumerals(number)}\u﴾';
 
   static String formatPrayerCountdown(Duration duration) {
     final hours = duration.inHours;
@@ -65,5 +65,12 @@ class ArabicUtils {
       4: 'الخميس', 5: 'الجمعة', 6: 'السبت', 7: 'الأحد',
     };
     return days[weekday] ?? '';
+  }
+
+  // The Uthmani encoding from alquran.cloud places a standalone alef (U+0627)
+  // after every tanwin-nasb mark (U+064B). AmiriQuran renders this as a
+  // disconnected glyph creating a visible gap. Strip it before display.
+  static String normalizeQuranDisplay(String text) {
+    return text.replaceAll('ًا', 'ً');
   }
 }
