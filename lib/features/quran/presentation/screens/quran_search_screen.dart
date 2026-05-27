@@ -106,7 +106,7 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
               onTap: () => context.push(
                   '/quran/surah/${ayah.surahNumber}?ayah=${ayah.ayahNumber}'),
               title: Text(
-                _highlightQuery(ayah.textArabic),
+                ArabicUtils.normalizeQuranDisplay(ayah.textArabic),
                 style: AppTypography.quranAyah.copyWith(fontSize: 16),
                 textDirection: TextDirection.rtl,
               ),
@@ -121,6 +121,4 @@ class _QuranSearchScreenState extends ConsumerState<QuranSearchScreen> {
       },
     );
   }
-
-  String _highlightQuery(String text) => text; // Rich text highlighting can be added
 }
