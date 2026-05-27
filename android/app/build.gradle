@@ -4,6 +4,51 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// ─── Download adhan.mp3 into res/raw before each build ────────────────────────
+task downloadAdhanSound {
+    def outFile = file("src/main/res/raw/adhan.mp3")
+
+    def candidates = [
+        "https://www.islamicfinder.org/prayer-times/adhan/2.mp3",
+        "https://audio.islamicnetwork.com/adhan/Adhan_Makkah.mp3",
+        "https://cdn.islamic.network/audio/adhan/Makkah.mp3",
+    ]
+
+    doLast {
+        if (outFile.exists() && outFile.length() > 10_000) {
+            println "adhan.mp3 already present — skipping download."
+            return
+        }
+        outFile.parentFile.mkdirs()
+        def downloaded = false
+        for (urlStr in candidates) {
+            if (downloaded) break
+            try {
+                println "Trying: $urlStr"
+                def conn = new URL(urlStr).openConnection()
+                conn.connectTimeout = 8_000
+                conn.readTimeout    = 30_000
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+                def bytes = conn.inputStream.bytes
+                if (bytes.length > 10_000) {
+                    outFile.bytes = bytes
+                    println "adhan.mp3 downloaded (${bytes.length} bytes) from $urlStr"
+                    downloaded = true
+                }
+            } catch (Exception e) {
+                println "  Failed: ${e.message}"
+            }
+        }
+        if (!downloaded) {
+            println "WARNING: Could not download adhan.mp3 — default notification sound will be used."
+            println "         Place adhan.mp3 manually in android/app/src/main/res/raw/"
+        }
+    }
+}
+
+preBuild.dependsOn downloadAdhanSound
+// ─────────────────────────────────────────────────────────────────────────────
+
 android {
     namespace = "com.example.islamic_app"
     compileSdk = 35
