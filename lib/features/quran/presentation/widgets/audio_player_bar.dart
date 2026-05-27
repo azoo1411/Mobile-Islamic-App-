@@ -18,213 +18,111 @@ class AudioPlayerBar extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SeekBar(audioState: audioState),
-            _Controls(audioState: audioState),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Seek bar ─────────────────────────────────────────────────────────────────
-
-class _SeekBar extends ConsumerWidget {
-  final AudioState audioState;
-  const _SeekBar({required this.audioState});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-      child: Row(
-        children: [
-          Text(
-            _fmt(audioState.position),
-            style: AppTypography.caption.copyWith(fontSize: 11),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape:
-                    const RoundSliderOverlayShape(overlayRadius: 12),
-                trackHeight: 3,
-              ),
-              child: Slider(
-                value: audioState.progress.clamp(0.0, 1.0),
-                activeColor: AppColors.primary,
-                inactiveColor: AppColors.divider,
-                onChanged: audioState.duration.inMilliseconds > 0
-                    ? (v) => ref.read(audioServiceProvider.notifier).seek(v)
-                    : null,
-              ),
-            ),
-          ),
-          Text(
-            _fmt(audioState.duration),
-            style: AppTypography.caption.copyWith(fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-}
-
-// ─── Controls row ─────────────────────────────────────────────────────────────
-
-class _Controls extends ConsumerWidget {
-  final AudioState audioState;
-  const _Controls({required this.audioState});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(audioServiceProvider.notifier);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: Row(
-        children: [
-          // Reciter picker
-          InkWell(
-            onTap: () => _showReciterPicker(context, ref),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.mic_none,
-                      size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(
-                    _shortName(audioState.reciterId),
-                    style: AppTypography.caption,
-                  ),
-                  const Icon(Icons.keyboard_arrow_down,
-                      size: 16, color: AppColors.textSecondary),
-                ],
-              ),
-            ),
-          ),
-          const Spacer(),
-          // Ayah label
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text(
-              'س ${ArabicUtils.toArabicNumerals(audioState.surahNumber)} · آ ${ArabicUtils.toArabicNumerals(audioState.ayahNumber)}',
-              style: AppTypography.caption,
-            ),
-          ),
-          const Spacer(),
-          // Skip previous
-          IconButton(
-            iconSize: 22,
-            icon: const Icon(Icons.skip_previous),
-            color: AppColors.primary,
-            onPressed: notifier.previous,
-          ),
-          // Play / Pause / Loading
-          if (audioState.isLoading)
-            const SizedBox(
-              width: 40,
-              height: 40,
-              child: Padding(
-                padding: EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 36, height: 36,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  value: audioState.progress,
+                  backgroundColor: AppColors.divider,
                   color: AppColors.primary,
+                  strokeWidth: 3,
                 ),
               ),
-            )
-          else
-            IconButton(
-              iconSize: 38,
-              icon: Icon(
-                audioState.isPlaying ? Icons.pause_circle : Icons.play_circle,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('سورة ${ArabicUtils.toArabicNumerals(audioState.surahNumber)} · آية ${ArabicUtils.toArabicNumerals(audioState.ayahNumber)}',
+                        style: AppTypography.caption, textDirection: TextDirection.rtl),
+                    GestureDetector(
+                      onTap: () => _showReciterSheet(context, ref, audioState),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 2),
+                          Text(_reciterName(audioState.reciterId),
+                              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary),
+                              textDirection: TextDirection.rtl),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              color: AppColors.primary,
-              onPressed: audioState.isPlaying ? notifier.pause : notifier.resume,
-            ),
-          // Skip next
-          IconButton(
-            iconSize: 22,
-            icon: const Icon(Icons.skip_next),
-            color: AppColors.primary,
-            onPressed: notifier.next,
-          ),
-          // Stop
-          IconButton(
-            iconSize: 22,
-            icon: const Icon(Icons.stop_circle_outlined),
-            color: AppColors.textSecondary,
-            onPressed: notifier.stop,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _shortName(String id) {
-    final name = AppConstants.reciters
-        .firstWhere((r) => r['id'] == id,
-            orElse: () => {'name': 'قارئ'})['name']!;
-    final words = name.split(' ');
-    return words.take(2).join(' ');
-  }
-
-  void _showReciterPicker(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('اختر القارئ', style: AppTypography.heading3),
-            ),
-            const Divider(height: 1),
-            ...AppConstants.reciters.map(
-              (reciter) => ListTile(
-                title: Text(reciter['name']!, style: AppTypography.body),
-                trailing: audioState.reciterId == reciter['id']
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  ref
-                      .read(audioServiceProvider.notifier)
-                      .selectReciter(reciter['id']!);
-                  Navigator.pop(context);
+              IconButton(icon: const Icon(Icons.skip_next), color: AppColors.primary,
+                  onPressed: () => ref.read(audioServiceProvider.notifier).next()),
+              IconButton(
+                icon: Icon(audioState.isPlaying ? Icons.pause : Icons.play_arrow, size: 32),
+                color: AppColors.primary,
+                onPressed: () {
+                  if (audioState.isPlaying) { ref.read(audioServiceProvider.notifier).pause(); }
+                  else { ref.read(audioServiceProvider.notifier).resume(); }
                 },
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              IconButton(icon: const Icon(Icons.skip_previous), color: AppColors.primary,
+                  onPressed: () => ref.read(audioServiceProvider.notifier).previous()),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  void _showReciterSheet(BuildContext context, WidgetRef ref, AudioState state) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.mic, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('اختر القارئ', style: AppTypography.heading3),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ...AppConstants.reciters.map((r) {
+                final isSelected = r['id'] == state.reciterId;
+                return ListTile(
+                  onTap: () { ref.read(audioServiceProvider.notifier).setReciter(r['id']!); Navigator.pop(context); },
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      : const Icon(Icons.radio_button_unchecked, color: AppColors.textSecondary),
+                  title: Text(r['name']!,
+                      style: AppTypography.body.copyWith(
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                          color: isSelected ? AppColors.primary : AppColors.textPrimary),
+                      textDirection: TextDirection.rtl),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _reciterName(String id) =>
+      AppConstants.reciters.firstWhere((r) => r['id'] == id, orElse: () => {'name': 'قارئ مجهول'})['name']!;
 }

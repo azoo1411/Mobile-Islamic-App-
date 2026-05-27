@@ -1,17 +1,23 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import '../core/utils/arabic_utils.dart';
-
 class NotificationService {
   NotificationService._();
   static final instance = NotificationService._();
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'prayer_times';
+  static const _channelId   = 'prayer_times';
   static const _channelName = 'أوقات الصلاة';
   static const _channelDesc = 'إشعارات مواعيد الصلاة والأذان';
+
+  static const _prayerNames = {
+    'fajr':    'الفجر',
+    'dhuhr':   'الظهر',
+    'asr':     'العصر',
+    'maghrib': 'المغرب',
+    'isha':    'العشاء',
+  };
 
   Future<void> initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -25,13 +31,14 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    // Create notification channel for Android
     const channel = AndroidNotificationChannel(
       _channelId,
       _channelName,
       description: _channelDesc,
-      importance: Importance.high,
+      importance: Importance.max,
       enableVibration: true,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('adhan'),
     );
 
     await _plugin
@@ -43,61 +50,52 @@ class NotificationService {
   Future<void> schedulePrayerNotifications({
     required Map<String, DateTime> prayerTimes,
   }) async {
-    // Cancel existing prayer notifications first
     for (int i = 0; i < 5; i++) {
       await _plugin.cancel(i);
     }
 
+    final now = tz.TZDateTime.now(tz.local);
     int id = 0;
-    for (final entry in prayerTimes.entries) {
-      final prayerName = ArabicUtils.prayerName(entry.key);
-      final time = entry.value;
 
-      if (time.isAfter(DateTime.now())) {
+    for (final entry in prayerTimes.entries) {
+      final name    = _prayerNames[entry.key] ?? entry.key;
+      final tzTime  = tz.TZDateTime.from(entry.value, tz.local);
+
+      if (tzTime.isAfter(now)) {
         await _plugin.zonedSchedule(
-          id++,
-          'حان وقت $prayerName',
-          'الله أكبر، الله أكبر، أشهد أن لا إله إلا الله...',
-          tz.TZDateTime.from(time, tz.local),
+          id,
+          'حان وقت صلاة $name',
+          'الله أكبر الله أكبر، أشهد أن لا إله إلا الله',
+          tzTime,
           NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
               _channelName,
               channelDescription: _channelDesc,
-              importance: Importance.high,
-              priority: Priority.high,
-              styleInformation: const BigTextStyleInformation(''),
+              importance: Importance.max,
+              priority: Priority.max,
+              sound: const RawResourceAndroidNotificationSound('adhan'),
+              playSound: true,
+              enableVibration: true,
+              styleInformation: const BigTextStyleInformation(
+                'الله أكبر الله أكبر، أشهد أن لا إله إلا الله، '
+                'أشهد أن محمداً رسول الله، حي على الصلاة، حي على الفلاح',
+              ),
             ),
             iOS: const DarwinNotificationDetails(
               presentAlert: true,
               presentBadge: true,
               presentSound: true,
+              sound: 'adhan.aiff',
             ),
           ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
       }
+      id++;
     }
-  }
-
-  Future<void> showInstantNotification({
-    required String title,
-    required String body,
-  }) async {
-    await _plugin.show(
-      999,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          importance: Importance.defaultImportance,
-        ),
-      ),
-    );
   }
 
   Future<void> cancelAll() => _plugin.cancelAll();
