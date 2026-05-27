@@ -29,66 +29,85 @@ class AudioPlayerBar extends ConsumerWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  _buildProgressIndicator(audioState),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'سورة ${ArabicUtils.toArabicNumerals(audioState.surahNumber)} · آية ${ArabicUtils.toArabicNumerals(audioState.ayahNumber)}',
-                          style: AppTypography.caption,
-                          textDirection: TextDirection.rtl,
-                        ),
-                        Text(
-                          _reciterName(audioState.reciterId),
-                          style: AppTypography.bodySmall.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textDirection: TextDirection.rtl,
-                        ),
-                      ],
+              // ── Progress ring ──
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  value: audioState.progress,
+                  backgroundColor: AppColors.divider,
+                  color: AppColors.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // ── Surah / Reciter info ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'سورة ${ArabicUtils.toArabicNumerals(audioState.surahNumber)} '
+                      '· آية ${ArabicUtils.toArabicNumerals(audioState.ayahNumber)}',
+                      style: AppTypography.caption,
+                      textDirection: TextDirection.rtl,
                     ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.skip_next),
-                        color: AppColors.primary,
-                        onPressed: () =>
-                            ref.read(audioServiceProvider.notifier).next(),
+                    GestureDetector(
+                      onTap: () => _showReciterSheet(context, ref, audioState),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.keyboard_arrow_down,
+                              size: 16, color: AppColors.primary),
+                          const SizedBox(width: 2),
+                          Text(
+                            _reciterName(audioState.reciterId),
+                            style: AppTypography.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          audioState.isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          size: 32,
-                        ),
-                        color: AppColors.primary,
-                        onPressed: () {
-                          if (audioState.isPlaying) {
-                            ref.read(audioServiceProvider.notifier).pause();
-                          } else {
-                            ref.read(audioServiceProvider.notifier).resume();
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous),
-                        color: AppColors.primary,
-                        onPressed: () =>
-                            ref.read(audioServiceProvider.notifier).previous(),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Controls ──
+              IconButton(
+                icon: const Icon(Icons.skip_next),
+                color: AppColors.primary,
+                onPressed: () =>
+                    ref.read(audioServiceProvider.notifier).next(),
+              ),
+              IconButton(
+                icon: Icon(
+                  audioState.isPlaying ? Icons.pause : Icons.play_arrow,
+                  size: 32,
+                ),
+                color: AppColors.primary,
+                onPressed: () {
+                  if (audioState.isPlaying) {
+                    ref.read(audioServiceProvider.notifier).pause();
+                  } else {
+                    ref.read(audioServiceProvider.notifier).resume();
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.skip_previous),
+                color: AppColors.primary,
+                onPressed: () =>
+                    ref.read(audioServiceProvider.notifier).previous(),
               ),
             ],
           ),
@@ -97,22 +116,73 @@ class AudioPlayerBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressIndicator(AudioState state) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: CircularProgressIndicator(
-        value: state.progress,
-        backgroundColor: AppColors.divider,
-        color: AppColors.primary,
-        strokeWidth: 3,
+  void _showReciterSheet(
+      BuildContext context, WidgetRef ref, AudioState state) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.mic, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('اختر القارئ',
+                        style: AppTypography.heading3),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ...AppConstants.reciters.map((r) {
+                final isSelected = r['id'] == state.reciterId;
+                return ListTile(
+                  onTap: () {
+                    ref
+                        .read(audioServiceProvider.notifier)
+                        .setReciter(r['id']!);
+                    Navigator.pop(context);
+                  },
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle,
+                          color: AppColors.primary)
+                      : const Icon(Icons.radio_button_unchecked,
+                          color: AppColors.textSecondary),
+                  title: Text(
+                    r['name']!,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   String _reciterName(String id) {
-    return AppConstants.reciters
-        .firstWhere((r) => r['id'] == id,
-            orElse: () => {'name': 'قارئ مجهول'})['name']!;
+    return AppConstants.reciters.firstWhere(
+      (r) => r['id'] == id,
+      orElse: () => {'name': 'قارئ مجهول'},
+    )['name']!;
   }
 }
