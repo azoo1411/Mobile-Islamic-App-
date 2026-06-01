@@ -26,8 +26,9 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import FloatingTabBar      from './src/components/FloatingTabBar';
 import SurahIndexScreen    from './src/screens/SurahIndexScreen';
 import QuranReadingScreen  from './src/screens/QuranReadingScreen';
-import SearchScreen        from './src/screens/SearchScreen';
-import RecitationScreen    from './src/screens/RecitationScreen';
+import AdhkarScreen        from './src/screens/AdhkarScreen';
+import AdhkarReaderScreen  from './src/screens/AdhkarReaderScreen';
+import PoetryScreen        from './src/screens/PoetryScreen';
 import SettingsScreen      from './src/screens/SettingsScreen';
 import PrayerTimesScreen   from './src/screens/PrayerTimesScreen';
 
@@ -40,26 +41,34 @@ const Tab   = createBottomTabNavigator();
 function QuranStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
-      <Stack.Screen name="SurahIndex"    component={SurahIndexScreen}   />
-      <Stack.Screen name="QuranReading"  component={QuranReadingScreen}  />
+      <Stack.Screen name="SurahIndex"   component={SurahIndexScreen}  />
+      <Stack.Screen name="QuranReading" component={QuranReadingScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ── Adhkar stack (Category list → Reader) ────────────────────────────────────
+function AdhkarStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
+      <Stack.Screen name="AdhkarHome"   component={AdhkarScreen}       />
+      <Stack.Screen name="AdhkarReader" component={AdhkarReaderScreen}  />
     </Stack.Navigator>
   );
 }
 
 // ── Bottom tab navigator with custom floating bar ─────────────────────────────
 function MainTabs() {
-  const { colors, isDark } = useTheme();
-
   return (
     <Tab.Navigator
       tabBar={props => <FloatingTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Quran"      component={QuranStack}       />
-      <Tab.Screen name="Prayer"     component={PrayerTimesScreen} />
-      <Tab.Screen name="Search"     component={SearchScreen}     />
-      <Tab.Screen name="Recitation" component={RecitationScreen}  />
-      <Tab.Screen name="Settings"   component={SettingsScreen}   />
+      <Tab.Screen name="Quran"    component={QuranStack}        />
+      <Tab.Screen name="Prayer"   component={PrayerTimesScreen}  />
+      <Tab.Screen name="Adhkar"   component={AdhkarStack}        />
+      <Tab.Screen name="Poetry"   component={PoetryScreen}       />
+      <Tab.Screen name="Settings" component={SettingsScreen}     />
     </Tab.Navigator>
   );
 }

@@ -12,9 +12,8 @@ import {
   IconQuran,
   IconPrayer,
   IconAdhkar,
-  IconSearch,
-  IconRecitation,
   IconSettingsKnobs,
+  IconLibrary,
 } from './TabIcons';
 
 // ─── Icon size token — ONE place to change for all tabs ──────────────────────
@@ -23,13 +22,11 @@ const ICON_SIZE = 22;
 // ─── Per-route icon mapping ───────────────────────────────────────────────────
 // Every entry uses the same ICON_SIZE; color is injected at render time.
 const TAB_CONFIG = {
-  Quran:      { Icon: IconQuran,         label: 'القرآن'     },
-  Prayer:     { Icon: IconPrayer,        label: 'الصلاة'     },
-  Search:     { Icon: IconSearch,        label: 'البحث'      },
-  Recitation: { Icon: IconRecitation,    label: 'التلاوة'    },
-  Settings:   { Icon: IconSettingsKnobs, label: 'الإعدادات'  },
-  // Uncomment to add الأذكار:
-  // Adhkar:  { Icon: IconAdhkar,        label: 'الأذكار'    },
+  Quran:   { Icon: IconQuran,         label: 'القرآن'    },
+  Prayer:  { Icon: IconPrayer,        label: 'الصلاة'    },
+  Adhkar:  { Icon: IconAdhkar,        label: 'الأذكار'   },
+  Poetry:  { Icon: IconLibrary,       label: 'المكتبة'   },
+  Settings: { Icon: IconSettingsKnobs, label: 'الإعدادات' },
 };
 
 // ─── Single tab button ────────────────────────────────────────────────────────
