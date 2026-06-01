@@ -106,7 +106,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen>
   Widget _buildRecitationTab(SurahDetailsData data) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-      itemCount: data.ayahs.length + 1, // +1 for basmala header
+      itemCount: data.ayahs.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) return _buildSurahHeader(data);
         final ayah = data.ayahs[index - 1];
@@ -166,7 +166,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                ayah.textUthmani,
+                ArabicUtils.normalizeQuranDisplay(ayah.textUthmani),
                 style: AppTypography.quranAyah.copyWith(fontSize: 18),
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,

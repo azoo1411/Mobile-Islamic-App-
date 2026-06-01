@@ -1,6 +1,12 @@
 class ArabicUtils {
   ArabicUtils._();
 
+  // Uthmani script places U+0627 (alef) after U+064B (tanwin-nasb) at word
+  // boundaries, creating a visual gap in the AmiriQuran font. Strip it.
+  static String normalizeQuranDisplay(String text) {
+    return text.replaceAll('ًا', 'ً');
+  }
+
   static String toArabicNumerals(int number) {
     const western = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -25,7 +31,6 @@ class ArabicUtils {
         .replaceAll('9', '٩');
   }
 
-  // Encapsulate ayah number in Quran-style circle character
   static String ayahNumber(int number) => '﴿${toArabicNumerals(number)}﴾';
 
   static String formatPrayerCountdown(Duration duration) {

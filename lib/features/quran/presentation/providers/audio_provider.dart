@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../core/constants/app_constants.dart';
 import '../../../../database/app_database.dart';
 import '../../../../services/audio_service.dart';
 
@@ -10,7 +13,7 @@ class AudioState {
   final int surahNumber;
   final int ayahNumber;
   final String reciterId;
-  final double progress; // 0.0 – 1.0
+  final double progress;
 
   const AudioState({
     this.isVisible = false,
@@ -44,7 +47,23 @@ class AudioState {
 class AudioServiceNotifier extends StateNotifier<AudioState> {
   final QuranAudioService _service;
 
-  AudioServiceNotifier(this._service) : super(const AudioState());
+  AudioServiceNotifier(this._service) : super(const AudioState()) {
+    _loadSavedReciter();
+  }
+
+  Future<void> _loadSavedReciter() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(AppConstants.prefReciter);
+    if (saved != null) {
+      state = state.copyWith(reciterId: saved);
+    }
+  }
+
+  Future<void> setReciter(String reciterId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.prefReciter, reciterId);
+    state = state.copyWith(reciterId: reciterId);
+  }
 
   Future<void> playAyah({
     required int surahNumber,
@@ -96,10 +115,8 @@ final audioServiceProvider =
   return AudioServiceNotifier(QuranAudioService());
 });
 
-// Which ayah is currently highlighted
 final currentlyPlayingAyahProvider = Provider<Ayah?>((ref) {
   final audioState = ref.watch(audioServiceProvider);
   if (!audioState.isPlaying) return null;
-  // Returns a lightweight reference only — actual Ayah loaded via surahDetailsProvider
   return null;
 });

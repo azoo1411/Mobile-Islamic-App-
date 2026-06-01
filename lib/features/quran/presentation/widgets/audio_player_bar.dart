@@ -46,12 +46,26 @@ class AudioPlayerBar extends ConsumerWidget {
                           style: AppTypography.caption,
                           textDirection: TextDirection.rtl,
                         ),
-                        Text(
-                          _reciterName(audioState.reciterId),
-                          style: AppTypography.bodySmall.copyWith(
-                            fontWeight: FontWeight.w700,
+                        GestureDetector(
+                          onTap: () => _showReciterSheet(context, ref),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _reciterName(audioState.reciterId),
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                                textDirection: TextDirection.rtl,
+                              ),
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                            ],
                           ),
-                          textDirection: TextDirection.rtl,
                         ),
                       ],
                     ),
@@ -106,6 +120,50 @@ class AudioPlayerBar extends ConsumerWidget {
         backgroundColor: AppColors.divider,
         color: AppColors.primary,
         strokeWidth: 3,
+      ),
+    );
+  }
+
+  void _showReciterSheet(BuildContext context, WidgetRef ref) {
+    final currentId = ref.read(audioServiceProvider).reciterId;
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Text('اختر القارئ', style: AppTypography.heading3),
+              const Divider(height: 24),
+              ...AppConstants.reciters.map((reciter) {
+                final isActive = reciter['id'] == currentId;
+                return ListTile(
+                  onTap: () {
+                    ref
+                        .read(audioServiceProvider.notifier)
+                        .setReciter(reciter['id']!);
+                    Navigator.pop(context);
+                  },
+                  title: Text(
+                    reciter['name']!,
+                    style: AppTypography.body.copyWith(
+                      fontWeight:
+                          isActive ? FontWeight.w700 : FontWeight.normal,
+                      color: isActive ? AppColors.primary : null,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                  trailing: isActive
+                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      : null,
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
     );
   }
