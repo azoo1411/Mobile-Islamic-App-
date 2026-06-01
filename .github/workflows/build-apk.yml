@@ -1,0 +1,105 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [ main, claude/arabic-islamic-app-j58zT ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: بناء APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: تحميل الكود
+        uses: actions/checkout@v4
+
+      - name: إعداد Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: إعداد Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: stable
+          cache: true
+
+      - name: قبول licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: إنشاء local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+
+      - name: تثبيت التبعيات
+        run: flutter pub get
+
+      - name: توليد ملفات Drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: بناء APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: إعادة تسمية APK
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/alwijha-alqibliya.apk
+
+      - name: رفع APK كـ artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alwijha-alqibliya-apk
+          path: dist/alwijha-alqibliya.apk
+          retention-days: 30
+
+      - name: تحديد tag الإصدار
+        id: version
+        run: |
+          SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "tag=v1.1-$SHA" >> $GITHUB_OUTPUT
+          echo "name=الوجهة القبلية v1.1 — إصلاح الأخطاء" >> $GITHUB_OUTPUT
+
+      - name: إنشاء GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.name }}
+          body: |
+            ## 📲 الوجهة القبلية v1.1
+
+            ### ✅ الإصلاحات في هذا الإصدار
+            - 🔊 **معاينة صوت الأذان** — زر تشغيل/إيقاف في كل صوت قبل الاختيار
+            - ⏱ **عداد الصلاة** — إصلاح عرض ٠:٠٠ وحساب فجر الغد بعد العشاء
+            - 📧 **تواصل معنا** — إرسال مباشر بدون تطبيق بريد، بشاشة نجاح
+            - 🕌 **شعار جديد** — قبة المسجد والهلال على جميع أحجام الأيقونة
+            - 🧭 **القبلة** — بوصلة مُحسَّنة بتعويض الإمالة (tilt-compensated)
+
+            ### كل مميزات التطبيق
+            - 📖 القرآن الكريم كاملاً (٦٢٣٦ آية بالرسم العثماني)
+            - 🕌 أوقات الصلاة حسب موقعك
+            - 🔔 أذان المدينة (خاشقجي) أو مكة (السقاف) مع إشعارات
+            - 🧭 اتجاه القبلة بالبوصلة التفاعلية
+            - 📜 القصائد العربية الكلاسيكية والحديثة
+
+            **طريقة التثبيت:**
+            1. حمّل ملف `alwijha-alqibliya.apk`
+            2. افتحه على جهاز Android
+            3. فعّل "السماح بمصادر غير معروفة" إن طُلب
+          files: dist/alwijha-alqibliya.apk
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: سجل الأخطاء
+        if: failure()
+        run: |
+          find . -name '*.log' -path '*/build/*' | head -5 | xargs cat 2>/dev/null || true
