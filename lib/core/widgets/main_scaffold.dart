@@ -7,9 +7,10 @@ class MainScaffold extends StatelessWidget {
   const MainScaffold({super.key, required this.child});
 
   static const List<_NavItem> _items = [
-    _NavItem(path: '/home', icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
-    _NavItem(path: '/quran', icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'القرآن'),
-    _NavItem(path: '/prayer', icon: Icons.access_time_outlined, activeIcon: Icons.access_time, label: 'الصلاة'),
+    _NavItem(path: '/home',   icon: Icons.home_outlined,          activeIcon: Icons.home,          label: 'الرئيسية'),
+    _NavItem(path: '/quran',  icon: Icons.menu_book_outlined,     activeIcon: Icons.menu_book,     label: 'القرآن'),
+    _NavItem(path: '/adhkar', icon: Icons.spa_outlined,           activeIcon: Icons.spa,           label: 'الأذكار'),
+    _NavItem(path: '/prayer', icon: Icons.access_time_outlined,   activeIcon: Icons.access_time,   label: 'الصلاة'),
     _NavItem(path: '/poetry', icon: Icons.library_books_outlined, activeIcon: Icons.library_books, label: 'المكتبة'),
   ];
 
