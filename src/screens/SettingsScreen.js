@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, Switch, TouchableOpacity, ScrollView,
-  StyleSheet, StatusBar,
+  StyleSheet, StatusBar, Modal, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { THEME_MODES, FONT_SIZES } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import AuthScreen from './AuthScreen';
 import { fonts, fontSizes } from '../design-system/typography';
 import { spacing, borderRadius } from '../design-system/spacing';
 import { shadows } from '../design-system/shadows';
@@ -142,6 +144,84 @@ function FontSizeSelector({ current, onChange, colors }) {
   );
 }
 
+// ─── Account section ─────────────────────────────────────────────────────────
+function AccountSection({ colors }) {
+  const { user, profile, isAnonymous, isLoggedIn, logout } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+
+  async function handleLogout() {
+    Alert.alert(
+      'تسجيل الخروج',
+      'هل تريد تسجيل الخروج من حسابك؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'خروج', style: 'destructive', onPress: logout },
+      ]
+    );
+  }
+
+  if (!isLoggedIn || isAnonymous) {
+    return (
+      <>
+        <Modal visible={showAuth} animationType="slide" onRequestClose={() => setShowAuth(false)}>
+          <AuthScreen onClose={() => setShowAuth(false)} />
+        </Modal>
+
+        <SettingSection title="الحساب" colors={colors}>
+          <View style={styles.accountAnon}>
+            <View style={[styles.accountAvatar, { backgroundColor: colors.goldMuted }]}>
+              <Text style={[styles.accountAvatarText, { color: colors.gold }]}>👤</Text>
+            </View>
+            <Text style={[styles.accountAnonTitle, { color: colors.textPrimary }]}>
+              تصفح بدون حساب
+            </Text>
+            <Text style={[styles.accountAnonSub, { color: colors.textTertiary }]}>
+              سجّل دخولك لمزامنة المفضلة وتقدم القراءة
+            </Text>
+            <TouchableOpacity
+              style={[styles.loginBtn, { backgroundColor: colors.green }]}
+              onPress={() => setShowAuth(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.loginBtnText}>تسجيل الدخول / إنشاء حساب</Text>
+            </TouchableOpacity>
+          </View>
+        </SettingSection>
+      </>
+    );
+  }
+
+  const displayName = profile?.displayName || user?.displayName || user?.email;
+  const initial     = displayName?.[0]?.toUpperCase() || '؟';
+
+  return (
+    <SettingSection title="الحساب" colors={colors}>
+      <View style={styles.accountActive}>
+        <View style={[styles.accountAvatarLg, { backgroundColor: colors.green }]}>
+          <Text style={styles.accountInitial}>{initial}</Text>
+        </View>
+        <View style={styles.accountInfo}>
+          <Text style={[styles.accountName, { color: colors.textPrimary }]}>{displayName}</Text>
+          <Text style={[styles.accountEmail, { color: colors.textTertiary }]}>{user?.email}</Text>
+          <View style={[styles.syncBadge, { backgroundColor: colors.greenMuted }]}>
+            <Text style={[styles.syncText, { color: colors.greenLight }]}>● متزامن مع Firebase</Text>
+          </View>
+        </View>
+      </View>
+      <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
+      <SettingRow
+        icon="🚪"
+        label="تسجيل الخروج"
+        sublabel={user?.email}
+        colors={colors}
+        showDivider={false}
+        onPress={handleLogout}
+        right={<Text style={{ fontSize: 16, color: colors.error }}>›</Text>}
+      />
+    </SettingSection>
+  );
+}
+
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
   const {
@@ -171,6 +251,9 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom, paddingTop: spacing.xxl }}
       >
+
+        {/* ── Account ─────────────────────────────────────── */}
+        <AccountSection colors={colors} />
 
         {/* ── Appearance ──────────────────────────────────── */}
         <SettingSection title="المظهر" colors={colors}>
@@ -380,5 +463,87 @@ const styles = StyleSheet.create({
     height:           0.75,
     marginHorizontal: spacing.lg,
     borderRadius:     1,
+  },
+
+  // ── Account styles ───────────────────────────────────────────────────────────
+  accountAnon: {
+    padding:     spacing.xl,
+    alignItems:  'center',
+    gap:         spacing.md,
+  },
+  accountAvatar: {
+    width:          56,
+    height:         56,
+    borderRadius:   28,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  accountAvatarText: {
+    fontSize: 24,
+  },
+  accountAnonTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize:   fontSizes.body,
+    textAlign:  'center',
+  },
+  accountAnonSub: {
+    fontFamily: fonts.regular,
+    fontSize:   fontSizes.caption,
+    textAlign:  'center',
+    lineHeight: 18,
+  },
+  loginBtn: {
+    borderRadius:      borderRadius.full,
+    paddingVertical:   spacing.md,
+    paddingHorizontal: spacing.xxl,
+    marginTop:         spacing.xs,
+  },
+  loginBtnText: {
+    fontFamily: fonts.bold,
+    fontSize:   fontSizes.bodySm,
+    color:      '#FFFFFF',
+  },
+  accountActive: {
+    flexDirection:  'row-reverse',
+    alignItems:     'center',
+    padding:        spacing.lg,
+    gap:            spacing.md,
+  },
+  accountAvatarLg: {
+    width:          50,
+    height:         50,
+    borderRadius:   25,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  accountInitial: {
+    fontFamily: fonts.bold,
+    fontSize:   fontSizes.h3,
+    color:      '#FFFFFF',
+  },
+  accountInfo: {
+    flex:       1,
+    alignItems: 'flex-end',
+    gap:        2,
+  },
+  accountName: {
+    fontFamily: fonts.semiBold,
+    fontSize:   fontSizes.body,
+    textAlign:  'right',
+  },
+  accountEmail: {
+    fontFamily: fonts.regular,
+    fontSize:   fontSizes.caption,
+    textAlign:  'right',
+  },
+  syncBadge: {
+    borderRadius:      borderRadius.full,
+    paddingVertical:   3,
+    paddingHorizontal: spacing.md,
+    marginTop:         spacing.xxs,
+  },
+  syncText: {
+    fontFamily: fonts.semiBold,
+    fontSize:   fontSizes.caption,
   },
 });

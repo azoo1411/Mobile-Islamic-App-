@@ -14,16 +14,31 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.islamicapp.quran"
+      "bundleIdentifier": "com.islamicapp.quran",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1B4332"
       },
-      "package": "com.islamicapp.quran"
+      "package": "com.islamicapp.quran",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1B4332",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "أوقات الصلاة"
+        }
+      ]
     ]
   }
 }

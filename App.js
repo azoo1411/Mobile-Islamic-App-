@@ -23,6 +23,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { AuthProvider }    from './src/context/AuthContext';
 import FloatingTabBar      from './src/components/FloatingTabBar';
 import SurahIndexScreen    from './src/screens/SurahIndexScreen';
 import QuranReadingScreen  from './src/screens/QuranReadingScreen';
@@ -123,9 +124,11 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <View style={styles.root} onLayout={onLayoutRootView}>
-            <RootNavigator />
-          </View>
+          <AuthProvider>
+            <View style={styles.root} onLayout={onLayoutRootView}>
+              <RootNavigator />
+            </View>
+          </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
