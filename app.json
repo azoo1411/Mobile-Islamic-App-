@@ -26,6 +26,11 @@
       },
       "package": "com.islamicapp.quran"
     },
+    "extra": {
+      "eas": {
+        "projectId": "d7af4510-f0d7-4f27-b5a6-e89623e1bc1c"
+      }
+    },
     "plugins": [
       "expo-font",
       [
