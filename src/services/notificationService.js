@@ -1,18 +1,10 @@
 /**
- * Push notification service using expo-notifications + Firebase Cloud Messaging.
+ * إشعارات أوقات الصلاة — expo-notifications + Firebase Cloud Messaging
  *
- * Setup required:
- *  1. Android: add google-services.json to project root
- *  2. iOS: add GoogleService-Info.plist + enable Push Notifications capability
- *  3. In app.json add:
- *       "plugins": ["expo-notifications"]
- *       "android": { "googleServicesFile": "./google-services.json" }
- *       "ios": { "googleServicesFile": "./GoogleService-Info.plist" }
- *
- * This service:
- *  - Requests notification permission on first launch
- *  - Gets the FCM token and saves it to Firestore
- *  - Schedules local prayer time notifications
+ * الإعداد المطلوب (مرة واحدة):
+ *  Android: ضع google-services.json في مجلد المشروع
+ *  iOS:     ضع GoogleService-Info.plist + فعّل Push Notifications
+ *  app.json: تأكد من وجود plugin: ["expo-notifications"]
  */
 
 import * as Notifications from 'expo-notifications';
@@ -20,7 +12,7 @@ import { Platform }        from 'react-native';
 import { doc, updateDoc }  from 'firebase/firestore';
 import { db }              from '../config/firebase';
 
-// Show notifications when the app is in foreground
+// الإشعارات تظهر حتى عندما التطبيق مفتوح
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -29,45 +21,34 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// ── Permission + FCM token ────────────────────────────────────────────────────
+// ── تسجيل الجهاز ─────────────────────────────────────────────────────────────
 
 export async function registerForPushNotifications(uid) {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('prayer-times', {
-      name:       'أوقات الصلاة',
-      importance: Notifications.AndroidImportance.HIGH,
-      sound:      'default',
+      name:             'أوقات الصلاة',
+      importance:       Notifications.AndroidImportance.HIGH,
+      sound:            'default',
       vibrationPattern: [0, 250, 250, 250],
     });
   }
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
-
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') return null;
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') return null;
 
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync();
-
-    // Save token to Firestore so server can send targeted pushes
+    // احفظ توكن الجهاز في Firestore لإمكانية إرسال إشعارات مستقبلاً
     if (uid) {
-      await updateDoc(doc(db, 'users', uid), { expoPushToken: token });
+      await updateDoc(doc(db, 'userPrefs', uid), { expoPushToken: token });
     }
-
     return token;
-  } catch (_) {
-    return null;
-  }
+  } catch (_) { return null; }
 }
 
-// ── Prayer time notifications ─────────────────────────────────────────────────
+// ── جدولة إشعارات الصلاة ─────────────────────────────────────────────────────
 
-const PRAYER_NAMES = {
+const PRAYER_LABELS = {
   fajr:    'الفجر',
   dhuhr:   'الظهر',
   asr:     'العصر',
@@ -76,30 +57,26 @@ const PRAYER_NAMES = {
 };
 
 /**
- * Schedule daily prayer notifications.
- * prayerTimes: { fajr: Date, dhuhr: Date, asr: Date, maghrib: Date, isha: Date }
- * enabledPrayers: { fajr: bool, dhuhr: bool, ... }
+ * @param prayerTimes  { fajr: Date, dhuhr: Date, asr: Date, maghrib: Date, isha: Date }
+ * @param alerts       { fajr: bool, dhuhr: bool, asr: bool, maghrib: bool, isha: bool }
  */
-export async function schedulePrayerNotifications(prayerTimes, enabledPrayers = {}) {
-  // Cancel all existing prayer notifications first
+export async function schedulePrayerNotifications(prayerTimes, alerts = {}) {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  for (const [key, name] of Object.entries(PRAYER_NAMES)) {
-    if (!enabledPrayers[key]) continue;
+  const now = new Date();
+  for (const [key, label] of Object.entries(PRAYER_LABELS)) {
+    if (!alerts[key]) continue;
     const time = prayerTimes[key];
-    if (!time || time < new Date()) continue;
+    if (!time || time <= now) continue;
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `حان وقت صلاة ${name} 🕌`,
-        body:  'حيَّ على الصلاة، حيَّ على الفلاح',
+        title: `حان وقت صلاة ${label} 🕌`,
+        body:  'حيَّ على الصلاة · حيَّ على الفلاح',
         sound: 'default',
         data:  { prayer: key },
       },
-      trigger: {
-        date:    time,
-        repeats: false,
-      },
+      trigger: { date: time, repeats: false },
     });
   }
 }

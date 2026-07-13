@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, Switch, TouchableOpacity, ScrollView,
-  StyleSheet, StatusBar, Modal, Alert,
+  StyleSheet, StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { THEME_MODES, FONT_SIZES } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import AuthScreen from './AuthScreen';
+import { useUserPrefs, ADHAN_VOICES } from '../context/UserPrefsContext';
 import { fonts, fontSizes } from '../design-system/typography';
 import { spacing, borderRadius } from '../design-system/spacing';
 import { shadows } from '../design-system/shadows';
 
-// ─── Reusable setting components ─────────────────────────────────────────────
+// ─── Reusable components ──────────────────────────────────────────────────────
 
 function SettingSection({ title, children, colors }) {
   return (
@@ -30,11 +29,7 @@ function SettingRow({ icon, label, sublabel, right, onPress, showDivider = true,
   const Inner = onPress ? TouchableOpacity : View;
   return (
     <>
-      <Inner
-        style={styles.row}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
+      <Inner style={styles.row} onPress={onPress} activeOpacity={0.7}>
         <View style={[styles.rowIcon, { backgroundColor: colors.bgMuted }]}>
           <Text style={{ fontSize: 16 }}>{icon}</Text>
         </View>
@@ -72,12 +67,12 @@ function ToggleRow({ icon, label, sublabel, value, onChange, colors, showDivider
   );
 }
 
-// Theme selector pills
+// Theme selector
 function ThemeSelector({ current, onChange, colors }) {
   const options = [
-    { key: THEME_MODES.LIGHT, icon: '☀️', label: 'فاتح'  },
-    { key: THEME_MODES.DARK,  icon: '🌙', label: 'داكن'  },
-    { key: THEME_MODES.AUTO,  icon: '⚙',  label: 'تلقائي'},
+    { key: THEME_MODES.LIGHT, icon: '☀️', label: 'فاتح'   },
+    { key: THEME_MODES.DARK,  icon: '🌙', label: 'داكن'   },
+    { key: THEME_MODES.AUTO,  icon: '⚙',  label: 'تلقائي' },
   ];
   return (
     <View style={styles.themeRow}>
@@ -88,11 +83,7 @@ function ThemeSelector({ current, onChange, colors }) {
             key={o.key}
             style={[
               styles.themeChip,
-              {
-                backgroundColor: active ? colors.gold      : colors.bgMuted,
-                borderColor:     active ? colors.gold       : colors.border,
-                flex: 1,
-              },
+              { backgroundColor: active ? colors.gold : colors.bgMuted, borderColor: active ? colors.gold : colors.border, flex: 1 },
             ]}
             onPress={() => onChange(o.key)}
           >
@@ -110,9 +101,9 @@ function ThemeSelector({ current, onChange, colors }) {
 // Font size selector
 function FontSizeSelector({ current, onChange, colors }) {
   const options = [
-    { key: FONT_SIZES.SM, label: 'صغير', arabicSample: 'أ' },
+    { key: FONT_SIZES.SM, label: 'صغير',  arabicSample: 'أ' },
     { key: FONT_SIZES.MD, label: 'متوسط', arabicSample: 'أ' },
-    { key: FONT_SIZES.LG, label: 'كبير', arabicSample: 'أ' },
+    { key: FONT_SIZES.LG, label: 'كبير',  arabicSample: 'أ' },
   ];
   return (
     <View style={styles.fontRow}>
@@ -123,11 +114,7 @@ function FontSizeSelector({ current, onChange, colors }) {
             key={o.key}
             style={[
               styles.fontChip,
-              {
-                backgroundColor: active ? colors.goldMuted : colors.bgMuted,
-                borderColor:     active ? colors.gold       : colors.border,
-                flex: 1,
-              },
+              { backgroundColor: active ? colors.goldMuted : colors.bgMuted, borderColor: active ? colors.gold : colors.border, flex: 1 },
             ]}
             onPress={() => onChange(o.key)}
           >
@@ -144,85 +131,75 @@ function FontSizeSelector({ current, onChange, colors }) {
   );
 }
 
-// ─── Account section ─────────────────────────────────────────────────────────
-function AccountSection({ colors }) {
-  const { user, profile, isAnonymous, isLoggedIn, logout } = useAuth();
-  const [showAuth, setShowAuth] = useState(false);
+// ── أوقات الصلاة — تفعيل الأذان ──────────────────────────────────────────────
+const PRAYERS = [
+  { key: 'fajr',    label: 'الفجر',   icon: '🌙' },
+  { key: 'dhuhr',   label: 'الظهر',   icon: '☀️' },
+  { key: 'asr',     label: 'العصر',   icon: '🌤' },
+  { key: 'maghrib', label: 'المغرب',  icon: '🌇' },
+  { key: 'isha',    label: 'العشاء',  icon: '🌃' },
+];
 
-  async function handleLogout() {
-    Alert.alert(
-      'تسجيل الخروج',
-      'هل تريد تسجيل الخروج من حسابك؟',
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        { text: 'خروج', style: 'destructive', onPress: logout },
-      ]
-    );
-  }
-
-  if (!isLoggedIn || isAnonymous) {
-    return (
-      <>
-        <Modal visible={showAuth} animationType="slide" onRequestClose={() => setShowAuth(false)}>
-          <AuthScreen onClose={() => setShowAuth(false)} />
-        </Modal>
-
-        <SettingSection title="الحساب" colors={colors}>
-          <View style={styles.accountAnon}>
-            <View style={[styles.accountAvatar, { backgroundColor: colors.goldMuted }]}>
-              <Text style={[styles.accountAvatarText, { color: colors.gold }]}>👤</Text>
-            </View>
-            <Text style={[styles.accountAnonTitle, { color: colors.textPrimary }]}>
-              تصفح بدون حساب
-            </Text>
-            <Text style={[styles.accountAnonSub, { color: colors.textTertiary }]}>
-              سجّل دخولك لمزامنة المفضلة وتقدم القراءة
-            </Text>
-            <TouchableOpacity
-              style={[styles.loginBtn, { backgroundColor: colors.green }]}
-              onPress={() => setShowAuth(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.loginBtnText}>تسجيل الدخول / إنشاء حساب</Text>
-            </TouchableOpacity>
-          </View>
-        </SettingSection>
-      </>
-    );
-  }
-
-  const displayName = profile?.displayName || user?.displayName || user?.email;
-  const initial     = displayName?.[0]?.toUpperCase() || '؟';
+function PrayerAlertsSection({ colors }) {
+  const { prayerAlerts, togglePrayerAlert } = useUserPrefs();
 
   return (
-    <SettingSection title="الحساب" colors={colors}>
-      <View style={styles.accountActive}>
-        <View style={[styles.accountAvatarLg, { backgroundColor: colors.green }]}>
-          <Text style={styles.accountInitial}>{initial}</Text>
-        </View>
-        <View style={styles.accountInfo}>
-          <Text style={[styles.accountName, { color: colors.textPrimary }]}>{displayName}</Text>
-          <Text style={[styles.accountEmail, { color: colors.textTertiary }]}>{user?.email}</Text>
-          <View style={[styles.syncBadge, { backgroundColor: colors.greenMuted }]}>
-            <Text style={[styles.syncText, { color: colors.greenLight }]}>● متزامن مع Firebase</Text>
-          </View>
-        </View>
-      </View>
-      <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-      <SettingRow
-        icon="🚪"
-        label="تسجيل الخروج"
-        sublabel={user?.email}
-        colors={colors}
-        showDivider={false}
-        onPress={handleLogout}
-        right={<Text style={{ fontSize: 16, color: colors.error }}>›</Text>}
-      />
+    <SettingSection title="إشعارات الأذان" colors={colors}>
+      {PRAYERS.map((p, i) => (
+        <ToggleRow
+          key={p.key}
+          icon={p.icon}
+          label={p.label}
+          sublabel={prayerAlerts[p.key] ? 'مفعّل' : 'معطّل'}
+          value={prayerAlerts[p.key]}
+          onChange={() => togglePrayerAlert(p.key)}
+          colors={colors}
+          showDivider={i < PRAYERS.length - 1}
+        />
+      ))}
     </SettingSection>
   );
 }
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
+// ── صوت المؤذن ────────────────────────────────────────────────────────────────
+function AdhanVoiceSection({ colors }) {
+  const { adhanVoice, setAdhanVoice } = useUserPrefs();
+  const current = ADHAN_VOICES.find(v => v.id === adhanVoice) || ADHAN_VOICES[0];
+
+  return (
+    <SettingSection title="صوت الأذان" colors={colors}>
+      {ADHAN_VOICES.map((voice, i) => {
+        const active = adhanVoice === voice.id;
+        return (
+          <React.Fragment key={voice.id}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => setAdhanVoice(voice.id)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.rowIcon, { backgroundColor: active ? colors.goldMuted : colors.bgMuted }]}>
+                <Text style={{ fontSize: 16 }}>🎙</Text>
+              </View>
+              <View style={styles.rowLabel}>
+                <Text style={[styles.rowLabelText, { color: active ? colors.gold : colors.textPrimary }]}>
+                  {voice.nameAr}
+                </Text>
+              </View>
+              {active && (
+                <Text style={{ color: colors.gold, fontSize: 18, marginLeft: spacing.sm }}>✓</Text>
+              )}
+            </TouchableOpacity>
+            {i < ADHAN_VOICES.length - 1 && (
+              <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </SettingSection>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
   const {
     colors, isDark, themeMode, arabicFontSize,
@@ -230,7 +207,28 @@ export default function SettingsScreen() {
     setThemeMode, setArabicFontSize,
     toggleTranslation, toggleTranslit,
   } = useTheme();
+
+  const { setTheme, setArabicFontSize: syncFontSize,
+          setShowTranslation, setShowTranslit } = useUserPrefs();
   const insets = useSafeAreaInsets();
+
+  // Wrapper setters that update both ThemeContext (local) + Firestore (cloud)
+  function handleThemeChange(mode) {
+    setThemeMode(mode);
+    setTheme(mode);
+  }
+  function handleFontSizeChange(size) {
+    setArabicFontSize(size);
+    syncFontSize(size);
+  }
+  function handleTranslationToggle(val) {
+    toggleTranslation(val);
+    setShowTranslation(val);
+  }
+  function handleTranslitToggle(val) {
+    toggleTranslit(val);
+    setShowTranslit(val);
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -243,7 +241,7 @@ export default function SettingsScreen() {
       >
         <Text style={styles.headerTitle}>الإعدادات</Text>
         <Text style={[styles.headerSub, { color: colors.gold + 'BB' }]}>
-          تخصيص تجربة القراءة
+          تخصيص تجربة التطبيق
         </Text>
       </LinearGradient>
 
@@ -251,25 +249,20 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom, paddingTop: spacing.xxl }}
       >
-
-        {/* ── Account ─────────────────────────────────────── */}
-        <AccountSection colors={colors} />
-
-        {/* ── Appearance ──────────────────────────────────── */}
+        {/* ── المظهر ──────────────────────────────────────── */}
         <SettingSection title="المظهر" colors={colors}>
           <View style={styles.innerPad}>
             <Text style={[styles.subLabel, { color: colors.textSecondary }]}>وضع الألوان</Text>
-            <ThemeSelector current={themeMode} onChange={setThemeMode} colors={colors} />
+            <ThemeSelector current={themeMode} onChange={handleThemeChange} colors={colors} />
           </View>
         </SettingSection>
 
-        {/* ── Reading ─────────────────────────────────────── */}
+        {/* ── القراءة ─────────────────────────────────────── */}
         <SettingSection title="القراءة" colors={colors}>
           <View style={styles.innerPad}>
             <Text style={[styles.subLabel, { color: colors.textSecondary }]}>حجم الخط القرآني</Text>
-            <FontSizeSelector current={arabicFontSize} onChange={setArabicFontSize} colors={colors} />
+            <FontSizeSelector current={arabicFontSize} onChange={handleFontSizeChange} colors={colors} />
 
-            {/* Live preview */}
             <View style={[styles.previewBox, { backgroundColor: colors.bgMuted, borderColor: colors.border }]}>
               <Text style={[styles.previewText, { color: colors.arabicPrimary, fontSize: arabicFontSize, lineHeight: arabicFontSize * 1.85 }]}>
                 بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
@@ -284,7 +277,7 @@ export default function SettingsScreen() {
             label="الترجمة"
             sublabel="إظهار ترجمة الآيات"
             value={showTranslation}
-            onChange={toggleTranslation}
+            onChange={handleTranslationToggle}
             colors={colors}
             showDivider
           />
@@ -293,39 +286,24 @@ export default function SettingsScreen() {
             label="النقحرة"
             sublabel="كتابة النص العربي بالحروف اللاتينية"
             value={showTranslit}
-            onChange={toggleTranslit}
+            onChange={handleTranslitToggle}
             colors={colors}
             showDivider={false}
           />
         </SettingSection>
 
-        {/* ── Audio ───────────────────────────────────────── */}
-        <SettingSection title="الصوت" colors={colors}>
-          <SettingRow
-            icon="🎙"
-            label="القارئ الافتراضي"
-            sublabel="مشاري راشد العفاسي"
-            colors={colors}
-            onPress={() => {}}
-            right={<Text style={{ fontSize: 16, color: colors.textTertiary }}>›</Text>}
-          />
-          <SettingRow
-            icon="🌍"
-            label="لغة الترجمة"
-            sublabel="English"
-            colors={colors}
-            onPress={() => {}}
-            showDivider={false}
-            right={<Text style={{ fontSize: 16, color: colors.textTertiary }}>›</Text>}
-          />
-        </SettingSection>
+        {/* ── إشعارات الأذان ──────────────────────────────── */}
+        <PrayerAlertsSection colors={colors} />
 
-        {/* ── About ───────────────────────────────────────── */}
+        {/* ── صوت الأذان ──────────────────────────────────── */}
+        <AdhanVoiceSection colors={colors} />
+
+        {/* ── عن التطبيق ──────────────────────────────────── */}
         <SettingSection title="عن التطبيق" colors={colors}>
           <SettingRow
             icon="📖"
             label="المصحف الرقمي"
-            sublabel="الإصدار 1.0.0"
+            sublabel="الإصدار 1.0.0 — مزامنة السحابة مفعّلة"
             colors={colors}
             showDivider={false}
             right={null}
@@ -387,11 +365,11 @@ const styles = StyleSheet.create({
     gap:           spacing.sm,
   },
   themeChip: {
-    borderWidth:      1,
-    borderRadius:     borderRadius.lg,
-    paddingVertical:  spacing.md,
-    alignItems:       'center',
-    gap:              spacing.xxs,
+    borderWidth:     1,
+    borderRadius:    borderRadius.lg,
+    paddingVertical: spacing.md,
+    alignItems:      'center',
+    gap:             spacing.xxs,
   },
   themeLabel: {
     fontFamily: fonts.semiBold,
@@ -402,11 +380,11 @@ const styles = StyleSheet.create({
     gap:           spacing.sm,
   },
   fontChip: {
-    borderWidth:   1,
-    borderRadius:  borderRadius.lg,
+    borderWidth:     1,
+    borderRadius:    borderRadius.lg,
     paddingVertical: spacing.lg,
-    alignItems:    'center',
-    gap:           spacing.xs,
+    alignItems:      'center',
+    gap:             spacing.xs,
   },
   fontSample: {
     fontFamily: fonts.quranBold,
@@ -417,10 +395,10 @@ const styles = StyleSheet.create({
     fontSize:   fontSizes.caption,
   },
   previewBox: {
-    borderWidth:   1,
-    borderRadius:  borderRadius.lg,
-    padding:       spacing.lg,
-    alignItems:    'center',
+    borderWidth:  1,
+    borderRadius: borderRadius.lg,
+    padding:      spacing.lg,
+    alignItems:   'center',
   },
   previewText: {
     fontFamily:       fonts.quranBold,
@@ -456,94 +434,12 @@ const styles = StyleSheet.create({
     textAlign:  'right',
   },
   rowRight: {
-    alignItems: 'center',
+    alignItems:     'center',
     justifyContent: 'center',
   },
   rowDivider: {
     height:           0.75,
     marginHorizontal: spacing.lg,
     borderRadius:     1,
-  },
-
-  // ── Account styles ───────────────────────────────────────────────────────────
-  accountAnon: {
-    padding:     spacing.xl,
-    alignItems:  'center',
-    gap:         spacing.md,
-  },
-  accountAvatar: {
-    width:          56,
-    height:         56,
-    borderRadius:   28,
-    alignItems:     'center',
-    justifyContent: 'center',
-  },
-  accountAvatarText: {
-    fontSize: 24,
-  },
-  accountAnonTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize:   fontSizes.body,
-    textAlign:  'center',
-  },
-  accountAnonSub: {
-    fontFamily: fonts.regular,
-    fontSize:   fontSizes.caption,
-    textAlign:  'center',
-    lineHeight: 18,
-  },
-  loginBtn: {
-    borderRadius:      borderRadius.full,
-    paddingVertical:   spacing.md,
-    paddingHorizontal: spacing.xxl,
-    marginTop:         spacing.xs,
-  },
-  loginBtnText: {
-    fontFamily: fonts.bold,
-    fontSize:   fontSizes.bodySm,
-    color:      '#FFFFFF',
-  },
-  accountActive: {
-    flexDirection:  'row-reverse',
-    alignItems:     'center',
-    padding:        spacing.lg,
-    gap:            spacing.md,
-  },
-  accountAvatarLg: {
-    width:          50,
-    height:         50,
-    borderRadius:   25,
-    alignItems:     'center',
-    justifyContent: 'center',
-  },
-  accountInitial: {
-    fontFamily: fonts.bold,
-    fontSize:   fontSizes.h3,
-    color:      '#FFFFFF',
-  },
-  accountInfo: {
-    flex:       1,
-    alignItems: 'flex-end',
-    gap:        2,
-  },
-  accountName: {
-    fontFamily: fonts.semiBold,
-    fontSize:   fontSizes.body,
-    textAlign:  'right',
-  },
-  accountEmail: {
-    fontFamily: fonts.regular,
-    fontSize:   fontSizes.caption,
-    textAlign:  'right',
-  },
-  syncBadge: {
-    borderRadius:      borderRadius.full,
-    paddingVertical:   3,
-    paddingHorizontal: spacing.md,
-    marginTop:         spacing.xxs,
-  },
-  syncText: {
-    fontFamily: fonts.semiBold,
-    fontSize:   fontSizes.caption,
   },
 });
