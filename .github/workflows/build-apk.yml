@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Link EAS project
-        run: eas init --id d7af4510-f0d7-4f27-b5a6-e89623e1bc1c --non-interactive
+        run: eas init --id d7af4510-f0d7-4f27-b5a6-e89623e1bc1c --non-interactive --force
 
       - name: Build APK on EAS Cloud
         run: |
