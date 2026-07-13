@@ -9,13 +9,14 @@
 
 import * as Notifications from 'expo-notifications';
 import { Platform }        from 'react-native';
+import Constants           from 'expo-constants';
 import { doc, updateDoc }  from 'firebase/firestore';
 import { db }              from '../config/firebase';
 
 // الإشعارات تظهر حتى عندما التطبيق مفتوح
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
     shouldPlaySound: true,
     shouldSetBadge:  false,
   }),
@@ -37,7 +38,9 @@ export async function registerForPushNotifications(uid) {
   if (status !== 'granted') return null;
 
   try {
-    const { data: token } = await Notifications.getExpoPushTokenAsync();
+    const { data: token } = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    });
     // احفظ توكن الجهاز في Firestore لإمكانية إرسال إشعارات مستقبلاً
     if (uid) {
       await updateDoc(doc(db, 'userPrefs', uid), { expoPushToken: token });

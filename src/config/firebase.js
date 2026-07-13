@@ -14,9 +14,10 @@
  */
 
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth }                from 'firebase/auth';
+import { initializeAuth, getAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore }           from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import ReactNativeAsyncStorage    from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey:            'AIzaSyCjvxOjoOC2CdxVrath3cPp0IoLcu_g-Q4',
@@ -31,7 +32,15 @@ const firebaseConfig = {
 // Initialize once (avoids duplicate app error on hot-reload)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const auth = getAuth(app);
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+  });
+} catch {
+  auth = getAuth(app);
+}
+export { auth };
 export const db   = getFirestore(app);
 
 // Analytics is only supported in some environments (not Expo Go)

@@ -114,7 +114,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
         styles.container,
         { paddingBottom: insets.bottom + spacing.xs },
       ]}
-      pointerEvents="box-none"
     >
       <View
         style={[
