@@ -1,14 +1,17 @@
-name: بناء APK للأندرويد
+name: Build Android APK
 
 on:
   push:
-    branches: [claude/quran-ui-redesign-CSyp7, main]
+    branches:
+      - claude/quran-ui-redesign-CSyp7
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -23,77 +26,22 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Setup Expo & EAS
+      - name: Setup Expo and EAS CLI
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build APK on EAS
-        id: eas_build
+      - name: Build APK via EAS
         run: |
-          # Build and wait — EAS cloud handles the Android toolchain
           eas build \
             --platform android \
             --profile preview \
             --non-interactive \
-            --wait \
-            --json 2>/dev/null > build-result.json || \
-          eas build \
-            --platform android \
-            --profile preview \
-            --non-interactive \
-            --wait 2>&1 | tee build-output.txt
+            --wait
 
-          # Try to extract APK URL from JSON output
-          APK_URL=$(python3 -c "
-import json, sys
-try:
-    data = json.load(open('build-result.json'))
-    builds = data if isinstance(data, list) else [data]
-    for b in builds:
-        url = (b.get('artifacts') or {}).get('applicationArchiveUrl') \
-           or (b.get('artifacts') or {}).get('buildUrl') \
-           or ''
-        if url:
-            print(url)
-            break
-except:
-    pass
-" 2>/dev/null || echo "")
-
-          # Fallback: grep URL from text output
-          if [ -z "$APK_URL" ] && [ -f build-output.txt ]; then
-            APK_URL=$(grep -oE 'https://[^ ]+\.(apk|zip)' build-output.txt | head -1 || echo "")
-          fi
-
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
-
-          # Print summary
-          echo "## ✅ اكتمل بناء التطبيق" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "$APK_URL" ]; then
-            echo "**📥 رابط تحميل APK:**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "[$APK_URL]($APK_URL)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ لم يتم استخراج الرابط تلقائياً — ابحث عن رابط التحميل في [لوحة Expo](https://expo.dev/builds)" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "_تم البناء تلقائياً بواسطة GitHub Actions_" >> $GITHUB_STEP_SUMMARY
-
-      - name: Download APK from EAS
-        if: steps.eas_build.outputs.apk_url != ''
+      - name: Summary
         run: |
-          curl -L "${{ steps.eas_build.outputs.apk_url }}" \
-               -o islamic-app-$(date +%Y%m%d).apk \
-               --retry 3 --retry-delay 5
-
-      - name: Upload APK as GitHub Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: islamic-app-android
-          path: "*.apk"
-          retention-days: 30
-          if-no-files-found: warn
+          echo "## APK is ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download from: https://expo.dev/accounts/alqubail/projects/mobile-islamic-app/builds" >> $GITHUB_STEP_SUMMARY
