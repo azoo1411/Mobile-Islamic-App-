@@ -15,7 +15,6 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.islamicapp.quran",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "UIBackgroundModes": ["remote-notification"]
       }
@@ -24,8 +23,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#1B4332"
       },
-      "package": "com.islamicapp.quran",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.islamicapp.quran"
     },
     "plugins": [
       "expo-font",
