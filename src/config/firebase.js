@@ -18,17 +18,15 @@ import { getAuth }                from 'firebase/auth';
 import { getFirestore }           from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
-// ── ضع إعدادات مشروعك هنا ────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey:            'YOUR_API_KEY',
-  authDomain:        'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId:         'YOUR_PROJECT_ID',
-  storageBucket:     'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId:             'YOUR_APP_ID',
-  measurementId:     'YOUR_MEASUREMENT_ID',   // G-XXXXXXXXXX — from Analytics
+  apiKey:            'AIzaSyCjvxOjoOC2CdxVrath3cPp0IoLcu_g-Q4',
+  authDomain:        'islamic-app-akq.firebaseapp.com',
+  projectId:         'islamic-app-akq',
+  storageBucket:     'islamic-app-akq.firebasestorage.app',
+  messagingSenderId: '109575143969',
+  appId:             '1:109575143969:web:1d4ea97e5856017cf31960',
+  measurementId:     'G-9SN5BFP9D1',
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
 // Initialize once (avoids duplicate app error on hot-reload)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
